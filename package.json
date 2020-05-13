@@ -1,0 +1,19 @@
+{
+  "name": "load-biodiv-sta",
+  "version": "0.0.1",
+  "description": "Loads biodiversity data to Sensor Web Things API",
+  "main": "index.js",
+  "repository": "github:52North/c4c_load-biodiv-sta",
+  "author": "Henning Bredel <bredel@52north.org>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --ext .js,.vue src test/unit"
+  },
+  "dependencies": {
+    "csv": "^5.3.2",
+    "csv-parse": "^4.9.1",
+    "superagent": "^5.2.2",
+    "typescript": "^3.9.2"
+  }
+}
