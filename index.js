@@ -1,3 +1,4 @@
+const fs = require('fs')
 const https = require('https');
 const superagent = require("superagent");
 const parse = require('csv-parse');
@@ -51,7 +52,8 @@ const columns = [
 "identif_current_3",
 "identif_current_4",
 "identif_current_5",
-"identif_current_6;identif_id_6",
+"identif_current_6",
+"identif_id_6",
 "identif_id_0",
 "identif_id_1",
 "identif_id_2",
@@ -142,16 +144,17 @@ const columns = [
 "zic_time_zone"
 ];
 
-superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
-          //.set('accept', 'json')
-          .set("user-agent", "some-agent")
-          .set("accept", "*/*; charset=utf-8")
-          .end((err, res) => {
+// superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
+//           .set("user-agent", "some-agent")
+//           .set("accept", "*/*; charset=utf-8")
+//           .end((err, res) => {
+//              const data = res.text;
+fs.readFile('./RitmeNatura_odc.csv', (err, data) => {
             if (err) {
                 console.log(err);
             } else {
               const output = [];
-              parse(res.text, {
+              parse(data, {
                 columns: true,
                 delimiter: ";",
                 trim: true
