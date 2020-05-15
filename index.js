@@ -3,6 +3,8 @@ const https = require('https');
 const superagent = require("superagent");
 const parse = require('csv-parse');
 
+const GeoJSON = require('geojson');
+
 const columns = [
 "Altitud",
 "Calle o plaza",
@@ -144,6 +146,70 @@ const columns = [
 "zic_time_zone"
 ];
 
+const natusferaBaseUrl = "https://natusfera.gbif.es";
+const staBaseUrl = "http://localhost:8080/sta";
+
+function postThing(record) {
+  /*
+  {
+    "name": "Temperature Monitoring System",
+    "description": "Sensor system monitoring area temperature",
+    "properties": {
+      "Deployment Condition": "Deployed in a third floor balcony",
+      "Case Used": "Radiation shield"
+    }
+  }
+  */
+ const thing = {
+    name: record.user_login,
+    description: "Citizen Scientist",
+    properties: {
+      uri: natusferaBaseUrl + "/users/" + record.user_id,
+    },
+    Locations: [{
+        name: "Position",
+        description: "The location where the observation has been made (insitu for now)",
+        encodingType: "application/vnd.geo+json",
+        location: record.location
+      }
+    ],
+    Datastreams: [{
+        name: "Species stream",
+        description: "An observation datastream of species documented via mobile phone",
+        observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+        unitOfMeasurement: {
+          name: null,
+          symbol: null,
+          definition: null
+        },
+        ObservedProperty: {
+          name: "Taxon",
+          description: "The canonical name of the observed species",
+          definition: "http://purl.org/biodiversity/taxon/"
+        },
+        Sensor: {
+          name: "Citizen Scientiest",
+          description: "Person sharing individual observations to the public for scientific use",
+          encodingType: "application/pdf",
+          metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
+        }
+      }
+    ]
+  };
+
+  superagent.post(staBaseUrl + "/Things")
+            .send(thing)
+            .set("content-type", "application/json; charset=utf-8")
+            .set("accept", "application/json")
+            .then(res => {
+              console.log(res);
+            })
+            .catch(err => {
+              console.error(err);
+            });
+}
+
+
 // superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
 //           .set("user-agent", "some-agent")
 //           .set("accept", "*/*; charset=utf-8")
@@ -168,7 +234,12 @@ fs.readFile('./RitmeNatura_odc.csv', (err, data) => {
                     fenofase: data.Fenofase,
                     user_id: data.user_id,
                     user_login: data.user_login,
-                    taxon_name: data.taxon_name
+                    taxon_name: data.taxon_name,
+                    location:  {
+                      type: "Point",
+                      coordinates: [parseFloat(data.longitude), parseFloat(data.latitude)]
+                      //GeoJSON.parse(data, { Point: ['latitude', 'longitude']})
+                    }
                   };
 
                   record.observation_photos = [];
@@ -176,13 +247,22 @@ fs.readFile('./RitmeNatura_odc.csv', (err, data) => {
                     record.observation_photos.push({
                       id: data["photo_id_" + i],
                       attribution: data["photo_attribution_" + i],
-                      url: data["photo_large_url_" + i],
+                      url: data["photo_large_url_" + i]
                     });
                   }
                   output.push(record);
                 });
               }).on("end", () => {
-                console.log(output);
+                //console.log(output[0].location);
+
+                // get things
+
+                output.forEach(record => postThing(record));
+
+                // foreach records
+                // - (optionally) create thing (user) and data stream ()
+                // - (optionally) create data stream
+
                 console.log("finished");
               });
             }
