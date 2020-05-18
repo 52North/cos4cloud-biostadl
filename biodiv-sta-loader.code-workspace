@@ -2,6 +2,15 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../sensorweb-server-sta"
+		},
+		{
+			"path": "../biodiversity-sta"
 		}
-	]
+	],
+	"settings": {
+		"jslint.enable": false
+	}
 }

@@ -8,13 +8,14 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "lint": "eslint --ext .js,.vue src test/unit"
+    "lint": "eslint --ext .js src"
   },
   "dependencies": {
-    "csv": "^5.3.2",
     "csv-parse": "^4.9.1",
-    "geojson": "^0.5.0",
-    "superagent": "^5.2.2",
-    "typescript": "^3.9.2"
+    "jslint": "^0.12.1",
+    "superagent": "^5.2.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.0.0"
   }
 }
