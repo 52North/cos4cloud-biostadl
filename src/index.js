@@ -189,12 +189,7 @@ try {
           // }
         },
         time_observed_at: data.time_observed_at,
-        location: {
-          name: "location of user " + data.user_login,
-          description: "The location where the observation has been made (insitu for now)",
-          encodingType: "application/vnd.geo+json",
-          location: createPoint(data)
-        }
+        location: createPoint(data)
       };
 
       record.observation_photos = [];
@@ -212,57 +207,7 @@ try {
     });
 
   }).on("end", async () => {
-    try {
-
-      // PREPARE CONSTANTS IF NOT AVAILABLE
-
-      // sensor
-      const sensorsResponse = (await superagent.get(staBaseUrl + "/Sensors")).body;
-      const citSciSensor = {
-        name: "Citizen Scientist",
-        description: "Person sharing individual observations to the public for scientific use",
-        encodingType: "application/pdf",
-        metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
-      };
-      const sensor = sensorsResponse.value.find(sensor => sensor.name === "Citizen Scientist");
-      const sensorId = sensor ? sensor["@iot.id"] : (await postSensor(citSciSensor)).body["@iot.id"];
-
-      // observed property
-      const observedPropertiesResponse = (await superagent.get(staBaseUrl + "/ObservedProperties")).body;
-      const taxonObservedProperty = {
-        name: "Taxon",
-        description: "The canonical name of the observed species",
-        definition: "http://purl.org/biodiversity/taxon/"
-      };
-      const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === "Taxon");
-      const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(taxonObservedProperty)).body["@iot.id"];
-
-      // GET KNOWN CONTENT
-      const things = (await superagent.get(staBaseUrl + "/Things")).body;
-      const thingNames = things.value.map(thing => thing.name);
-      const datastreamsResponse = (await superagent.get(staBaseUrl + "/Datastreams")).body;
-
-      const newThings = {};
-      output.forEach(record => {
-        if (!newThings[record.id] && !thingNames.includes(record.user_login)) {
-          const observation = record.observation.taxon;
-          observation.observedPropertyId = observedPropertyId;
-          newThings[record.user_id] = createThing(record, sensorId, observation);
-        }
-      });
-      Object.keys(newThings)
-            .forEach(user_id => postThing(newThings[user_id]));
-
-      // get all things and datastreams already available
-
-      // foreach records
-      // - (optionally) create thing (user) and related data stream
-      // - (optionally) create data stream
-
-      console.log("finished");
-    } catch(err) {
-      console.error(err);
-    }
+    createNewThings(output).then(() => createNewObservations(output)).catch(error => console.error(error));
   });
 } catch (error) {
   console.error(error);
@@ -282,6 +227,43 @@ function createPoint(data) {
   }
 }
 
+async function createNewThings(output) {
+  const sensorsResponse = (await getSensors()).body;
+  const citSciSensor = {
+    name: "Citizen Scientist",
+    description: "Person sharing individual observations to the public for scientific use",
+    encodingType: "application/pdf",
+    metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
+  };
+  const sensor = sensorsResponse.value.find(sensor => sensor.name === "Citizen Scientist");
+  const sensorId = sensor ? sensor["@iot.id"] : (await postSensor(citSciSensor)).body["@iot.id"];
+
+  // observed property
+  const observedPropertiesResponse = (await getObservedProperties()).body;
+  const taxonObservedProperty = {
+    name: "Taxon",
+    description: "The canonical name of the observed species",
+    definition: "http://purl.org/biodiversity/taxon/"
+  };
+  const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === "Taxon");
+  const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(taxonObservedProperty)).body["@iot.id"];
+
+  const things = (await getThings()).body;
+  const thingNames = things.value.map(thing => thing.name);
+
+  const newThings = {};
+  output.forEach(record => {
+    if (!newThings[record.id] && !thingNames.includes(record.user_login)) {
+      const observation = record.observation.taxon;
+      observation.name = "taxon";
+      observation.observedPropertyId = observedPropertyId;
+      newThings[record.user_id] = createThing(record, sensorId, observation);
+    }
+  });
+  Object.keys(newThings)
+        .forEach(user_id => postThing(newThings[user_id]));
+}
+
 function createThing(record, sensorId, observation) {
   const user = record.user_login;
   const datastreams = createDatastream(user, sensorId, observation);
@@ -289,11 +271,9 @@ function createThing(record, sensorId, observation) {
     name: user,
     description: "Citizen Scientist",
     properties: {
-      uri: natusferaBaseUrl + "/users/" + record.user_id
+      uri: natusferaBaseUrl + "/users/" + record.user_id,
+      id: record.user_id
     },
-    Locations: [
-      record.location
-    ],
     Datastreams: datastreams
   };
   return thing;
@@ -314,6 +294,110 @@ function createDatastream(user, sensorId, observation) {
   }];
 }
 
+async function createNewObservations(output) {
+
+  const observationsByUserLogin = {};
+  output.forEach(record => {
+    if (!observationsByUserLogin[record.user_login]) {
+      observationsByUserLogin[record.user_login] = [];
+    }
+    const observations = observationsByUserLogin[record.user_login];
+    const speciesObservation = record.observation.taxon;
+    /*
+      taxon_name: data.taxon_name,
+      species_guess: data.species_guess,
+      fenofase: data.Fenofase
+    */
+    const observation = {
+      phenomenonTime: record.time_observed_at,
+      resultTime: record.time_observed_at,
+      result: speciesObservation.taxon_name,
+      FeatureOfInterest: {
+        name: "observed location",
+        description: "insitu location where taxon observation has been made",
+        encodingType: "application/vnd.geo+json",
+        feature: record.location
+      },
+      // parameters: [species_guess, fenofase, photos]
+    };
+    observations.push(observation);
+
+    const location = createLocation(record);
+    // update thing location /!\ cannot set time for HistoricalLocations
+  });
+
+
+  Object.keys(observationsByUserLogin)
+        .forEach(async user_login => {
+          const query = {
+            "$select": "id,Thing",
+            "$filter": "ObservedProperty/name eq 'Taxon' and Thing/name eq '" + user_login + "'"
+            //"$expand": "Thing($select=name)" // matches user_login
+          };
+          const datastreamsResponse = (await getDataStreams(query)).body;
+          const taxonDatastream = datastreamsResponse.value[0] || undefined;
+          if (taxonDatastream) {
+            const datastreamId = taxonDatastream["@iot.id"];
+            const observations = observationsByUserLogin[user_login];
+            observations.forEach(async observation => {
+              observation.Datastream = {
+                "@iot.id": datastreamId
+              }
+              sendPost(staBaseUrl + "/Observations", observation);
+            })
+          } else {
+            console.warn("no proper datastream found for user '" + user_login + "' and ObservedProperty 'Taxon'");
+          }
+        });
+}
+
+function createLocation(record) {
+  return {
+    name: "observed location",
+    description: "The location where the observation has been made (insitu for now)",
+    encodingType: "application/vnd.geo+json",
+    location: record.location
+  }
+}
+
+// REQUEST METHODS
+
+
+async function getThings(query) {
+  return sendGet(staBaseUrl + "/Things", query);
+}
+
+async function getSensors(query) {
+  return sendGet(staBaseUrl + "/Sensors", query);
+}
+
+async function getObservedProperties(query) {
+  return sendGet(staBaseUrl + "/ObservedProperties", query);
+}
+
+async function getDataStreams(query) {
+  return sendGet(staBaseUrl + "/Datastreams", query);
+}
+
+async function sendGet(url, query) {
+  if (query) {
+    console.log("GETting: " + url + " and query " + JSON.stringify(query, null, 2));
+  } else {
+    console.log("GETting: " + url);
+  }
+  const request = superagent.get(url)
+                            .set("content-type", "application/json; charset=utf-8")
+                            .set("accept", "application/json");
+  if (query) {
+    request.query(query);
+  }
+  return request.catch(error => {
+      const response = error.response;
+      const request = response.req;
+      console.error("errornous request: " + JSON.stringify(request, null, 2));
+    });
+}
+
 async function postSensor(sensor) {
   return sendPost(staBaseUrl + "/Sensors", sensor);
 }
@@ -327,11 +411,13 @@ function postThing(thing) {
 }
 
 async function sendPost(url, payload) {
+  console.log("POSTing to: " + url + "\n", JSON.stringify(payload, null, 2));
   return superagent.post(url)
     .send(payload)
     .set("content-type", "application/json; charset=utf-8")
     .set("accept", "application/json")
     .catch(error => {
-      console.error(JSON.stringify(error.response.body, 2));
+      const response = error.response;
+      console.error(JSON.stringify(response, null, 2));
     });
 }
