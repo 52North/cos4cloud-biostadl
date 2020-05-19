@@ -154,16 +154,21 @@ const emptyUOM = {
 
 
 try {
-
-  // superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
-  //           .set("user-agent", "some-agent")
-  //           .set("accept", "*/*; charset=utf-8")
-  //           .end((err, res) => {
-  //              const data = res.text;
-  const data = fs.readFileSync('./RitmeNatura_odc.csv');
+  const filePath = "./RitmeNatura_odc.csv";
+  fs.exists(filePath, exists => {
+    if (!exists) {
+      superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
+                .set("user-agent", "some-agent")
+                .set("accept", "*/*; charset=utf-8")
+                .end((err, res) => fs.writeFileSync(filePath, res.text, (err) => {
+                  if (err) throw err;
+                }));
+    }
+  });
+  const file = fs.readFileSync(filePath);
   
   const output = [];
-  parse(data, {
+  parse(file, {
     columns: true,
     delimiter: ";",
     trim: true
@@ -208,10 +213,11 @@ try {
 
   }).on("end", async () => {
     createNewThings(output).then(() => createNewObservations(output)).catch(error => console.error(error));
+    
   });
 } catch (error) {
   console.error(error);
-} 
+}
 
 function createPoint(data) {
   let lon = parseFloat(data.longitude);
