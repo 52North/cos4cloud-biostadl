@@ -144,6 +144,7 @@ const parse = require('csv-parse');
 // ];
 
 // CONSTANTS
+const filePath = "./RitmeNatura_odc.csv";
 const natusferaBaseUrl = "https://natusfera.gbif.es";
 const staBaseUrl = "http://localhost:8080/sta";
 const emptyUOM = {
@@ -152,71 +153,74 @@ const emptyUOM = {
   definition: null
 };
 
+fs.readFile(filePath, (err, data) => {
+  if (err) {
+    superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
+            .set("user-agent", "some-agent")
+            .set("accept", "*/*; charset=utf-8")
+            .end((err, res) => fs.writeFile(filePath, res.text, (err) => {
+              if (err) throw err;
+              const data = fs.readFileSync(filePath);
+              loadData(data);
+            }))
+  } else {
+    loadData(data);
+  }
+});
 
-try {
-  const filePath = "./RitmeNatura_odc.csv";
-  fs.exists(filePath, exists => {
-    if (!exists) {
-      superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
-                .set("user-agent", "some-agent")
-                .set("accept", "*/*; charset=utf-8")
-                .end((err, res) => fs.writeFileSync(filePath, res.text, (err) => {
-                  if (err) throw err;
-                }));
-    }
-  });
-  const file = fs.readFileSync(filePath);
-  
-  const output = [];
-  parse(file, {
-    columns: true,
-    delimiter: ";",
-    trim: true
-  }, function(err, data) {
-    data.forEach(data => {
-      const record = {
-        id: data.id,
-        uri: data.uri,
-        user_id: data.user_id,
-        user_login: data.user_login,
-        observation: {
-          taxon: {
-            observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
-            taxon_name: data.taxon_name,
-            species_guess: data.species_guess,
-            fenofase: data.Fenofase
+function loadData(data) {
+    try {
+    const output = [];
+    parse(data, {
+      columns: true,
+      delimiter: ";",
+      trim: true
+    }, function(err, data) {
+      data.forEach(data => {
+        const record = {
+          id: data.id,
+          uri: data.uri,
+          user_id: data.user_id,
+          user_login: data.user_login,
+          observation: {
+            taxon: {
+              observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+              taxon_name: data.taxon_name,
+              species_guess: data.species_guess,
+              fenofase: data.Fenofase
+            },
+            //},{
+            //  fenofase: {
+            //   observedProperty: "fenofase",
+            //   observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+            //   phase: data.Fenofase
+            // }
           },
-          //},{
-          //  fenofase: {
-          //   observedProperty: "fenofase",
-          //   observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
-          //   phase: data.Fenofase
-          // }
-        },
-        time_observed_at: data.time_observed_at,
-        location: createPoint(data)
-      };
+          time_observed_at: data.time_observed_at,
+          location: createPoint(data)
+        };
 
-      record.observation_photos = [];
-      for (let i = 0 ; i < data.observation_photos_count ; i++) {
-        record.observation_photos.push({
-          id: data["photo_id_" + i],
-          attribution: data["photo_attribution_" + i],
-          url: data["photo_large_url_" + i]
-        });
-      }
+        record.observation_photos = [];
+        for (let i = 0 ; i < data.observation_photos_count ; i++) {
+          record.observation_photos.push({
+            id: data["photo_id_" + i],
+            attribution: data["photo_attribution_" + i],
+            url: data["photo_large_url_" + i]
+          });
+        }
 
-      if (record.user_id) {
-        output.push(record);
-      }
+        if (record.user_id) {
+          output.push(record);
+        }
+      });
+
+    }).on("end", async () => {
+      createNewThings(output).then(() => createNewObservations(output)).catch(error => console.error(error));
+      
     });
-
-  }).on("end", async () => {
-    createNewThings(output).then(() => createNewObservations(output)).catch(error => console.error(error));
-    
-  });
-} catch (error) {
-  console.error(error);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function createPoint(data) {
