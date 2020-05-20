@@ -169,7 +169,7 @@ fs.readFile(filePath, (err, data) => {
 });
 
 function loadData(data) {
-    try {
+  try {
     const output = [];
     parse(data, {
       columns: true,
@@ -215,8 +215,7 @@ function loadData(data) {
       });
 
     }).on("end", async () => {
-      createNewThings(output).then(() => createNewObservations(output)).catch(error => console.error(error));
-      
+      createNewThings(output).then(() => console.log("done")).catch(error => console.error(error));
     });
   } catch (error) {
     console.error(error);
@@ -258,25 +257,72 @@ async function createNewThings(output) {
   const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === "Taxon");
   const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(taxonObservedProperty)).body["@iot.id"];
 
+  const observationsByUserLogin = {};
+  output.forEach(record => {
+    const user_login = record.user_login;
+    if (!observationsByUserLogin[user_login]) {
+      observationsByUserLogin[user_login] = {};
+    }
+    const userObservations = observationsByUserLogin[user_login];
+    const observation = record.observation;
+    Object.keys(observation)
+          .forEach(observedPropertyName => {
+            const observationValue = observation[observedPropertyName];
+            if (!userObservations[observedPropertyName]) {
+              userObservations[observedPropertyName] = {
+                observationType: observationValue.observationType,
+                observedPropertyId: observedPropertyId,
+                values: []
+              };
+            }
+            const records = userObservations[observedPropertyName];
+            records.values.push(observationValue);
+          });
+  });
+
   const things = (await getThings()).body;
   const thingNames = things.value.map(thing => thing.name);
 
   const newThings = {};
   output.forEach(record => {
     if (!newThings[record.id] && !thingNames.includes(record.user_login)) {
-      const observation = record.observation.taxon;
-      observation.name = "taxon";
-      observation.observedPropertyId = observedPropertyId;
-      newThings[record.user_id] = createThing(record, sensorId, observation);
+      const user_login = record.user_login;
+      const observationRecords = observationsByUserLogin[user_login];
+      // output.forEach(observationRecord => {
+      //   if (observationRecord.user_login === user_login) {
+      //     // may contain multiple observations
+      //     const observation = observationRecord.observation;
+      //     Object.keys(observation)
+      //           .forEach(observedPropertyName => {
+      //             const observationValue = observation[observedPropertyName];
+      //             if (!observationRecords[observedPropertyName]) {
+      //               observationRecords[observedPropertyName] = {
+      //                 observationType: observationValue.observationType,
+      //                 observedPropertyId: observedPropertyId,
+      //                 values: []
+      //               };
+      //             }
+      //             const records = observationRecords[observedPropertyName];
+      //             records.values.push(observationValue);
+      //           })
+      //   }
+      // });
+
+      newThings[record.user_id] = createThing(record, sensorId, observationRecords);
     }
   });
-  Object.keys(newThings)
-        .forEach(user_id => postThing(newThings[user_id]));
+
+  for (let user_id of Object.keys(newThings)) {
+    postThing(newThings[user_id]);
+  }
 }
 
-function createThing(record, sensorId, observation) {
+function createThing(record, sensorId, observationRecords) {
   const user = record.user_login;
-  const datastreams = createDatastream(user, sensorId, observation);
+  const datastreams = Object.keys(observationRecords)
+                            .map(observedPropertyName => createDatastream(record, sensorId, observedPropertyName, observationRecords))
+                            .filter(value => value !== undefined);
+  // const historicalLocations = createHistoricalLocations(re)
   const thing = {
     name: user,
     description: "Citizen Scientist",
@@ -286,12 +332,20 @@ function createThing(record, sensorId, observation) {
     },
     Datastreams: datastreams
   };
+
+  // const location = createLocation(record);
+  // update thing location /!\ cannot set time for HistoricalLocations
+
   return thing;
 }
 
-function createDatastream(user, sensorId, observation) {
-  return [{
-    name: "Datastream of user " + user + " (observing " + observation.name + ")",
+function createDatastream(record, sensorId, observedPropertyName, observationRecords) {
+  const observationValues = createObservationValues(record, observedPropertyName, observationRecords)
+  const observation = observationRecords[observedPropertyName]
+  
+  const user = record.user_login;
+  return {
+    name: "Datastream of user " + user + " (observing " + observedPropertyName + ")",
     description: "An observation datastream taken from a Citizen Scientist via mobile phone",
     observationType: observation.observationType,
     ObservedProperty: {
@@ -300,8 +354,48 @@ function createDatastream(user, sensorId, observation) {
     unitOfMeasurement: emptyUOM,
     Sensor: {
       "@iot.id": sensorId
-    }
-  }];
+    },
+    Observations: observationValues
+  };
+}
+
+function createObservationValues(record, observedPropertyName, observation) {
+  const observationvalue = observation[observedPropertyName];
+  return observationvalue.values.map(value => createObservationValue(record, value))
+                                .filter(o => o !== undefined);
+}
+
+function createObservationValue(record, observation) {
+  const observationtime = record.time_observed_at;
+  if (!observationtime || observationtime.length === 0) {
+    //console.log("Observation time is not available! " + JSON.stringify(record, null, 2));
+    return undefined;
+  }
+
+  return {
+    phenomenonTime: observationtime,
+    resultTime: observationtime,
+    result: observation.species_guess,
+    parameters: [
+      {
+        name: "taxon_name",
+        value: observation.taxon_name
+      }, {
+        name: "fenofase",
+        value: observation.fenofase
+      },
+      // {
+      //   name: "photos",
+      //   value: record.observation_photos
+      // }
+    ],
+    FeatureOfInterest: {
+      name: "observed location",
+      description: "insitu location where taxon observation has been made",
+      encodingType: "application/vnd.geo+json",
+      feature: record.location
+    },
+  };
 }
 
 async function createNewObservations(output) {
@@ -312,30 +406,12 @@ async function createNewObservations(output) {
       observationsByUserLogin[record.user_login] = [];
     }
     const observations = observationsByUserLogin[record.user_login];
-    const speciesObservation = record.observation.taxon;
-    /*
-      taxon_name: data.taxon_name,
-      species_guess: data.species_guess,
-      fenofase: data.Fenofase
-    */
-    const observation = {
-      phenomenonTime: record.time_observed_at,
-      resultTime: record.time_observed_at,
-      result: speciesObservation.taxon_name,
-      FeatureOfInterest: {
-        name: "observed location",
-        description: "insitu location where taxon observation has been made",
-        encodingType: "application/vnd.geo+json",
-        feature: record.location
-      },
-      // parameters: [species_guess, fenofase, photos]
-    };
-    observations.push(observation);
-
-    const location = createLocation(record);
-    // update thing location /!\ cannot set time for HistoricalLocations
+    try {
+      observations.push(createObservation(record));
+    } catch(err) {
+      console.error(err);
+    }
   });
-
 
   Object.keys(observationsByUserLogin)
         .forEach(async user_login => {
@@ -359,16 +435,16 @@ async function createNewObservations(output) {
             console.warn("no proper datastream found for user '" + user_login + "' and ObservedProperty 'Taxon'");
           }
         });
-}
-
-function createLocation(record) {
-  return {
-    name: "observed location",
-    description: "The location where the observation has been made (insitu for now)",
-    encodingType: "application/vnd.geo+json",
-    location: record.location
   }
-}
+
+// function createLocation(record) {
+//   return {
+//     name: "observed location",
+//     description: "The location where the observation has been made (insitu for now)",
+//     encodingType: "application/vnd.geo+json",
+//     location: record.location
+//   }
+// }
 
 // REQUEST METHODS
 
@@ -390,11 +466,11 @@ async function getDataStreams(query) {
 }
 
 async function sendGet(url, query) {
-  if (query) {
-    console.log("GETting: " + url + " and query " + JSON.stringify(query, null, 2));
-  } else {
-    console.log("GETting: " + url);
-  }
+  // if (query) {
+  //   console.log("GETting: " + url + " and query " + JSON.stringify(query, null, 2));
+  // } else {
+  //   console.log("GETting: " + url);
+  // }
   const request = superagent.get(url)
                             .set("content-type", "application/json; charset=utf-8")
                             .set("accept", "application/json");
@@ -403,8 +479,7 @@ async function sendGet(url, query) {
   }
   return request.catch(error => {
       const response = error.response;
-      const request = response.req;
-      console.error("errornous request: " + JSON.stringify(request, null, 2));
+      console.error("errornous request: " + JSON.stringify(response, null, 2));
     });
 }
 
@@ -416,12 +491,12 @@ async function postObservedProperty(observedProperty) {
   return sendPost(staBaseUrl + "/ObservedProperties", observedProperty);
 }
 
-function postThing(thing) {
-  sendPost(staBaseUrl + "/Things", thing);
+async function postThing(thing) {
+  return sendPost(staBaseUrl + "/Things", thing);
 }
 
 async function sendPost(url, payload) {
-  console.log("POSTing to: " + url + "\n", JSON.stringify(payload, null, 2));
+  // console.log("POSTing to: " + url + "\n", JSON.stringify(payload, null, 2));
   return superagent.post(url)
     .send(payload)
     .set("content-type", "application/json; charset=utf-8")
