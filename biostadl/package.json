@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "csv-parse": "^4.9.1",
-    "jslint": "^0.12.1",
     "superagent": "^5.2.2"
   },
   "devDependencies": {
