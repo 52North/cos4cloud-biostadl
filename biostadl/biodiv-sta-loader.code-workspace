@@ -4,13 +4,11 @@
 			"path": "."
 		},
 		{
-			"path": "../sensorweb-server-sta"
-		},
-		{
-			"path": "../biodiversity-sta"
+			"path": "../docker-sta"
 		}
 	],
 	"settings": {
+		"jshint.enable": false,
 		"jslint.enable": false
 	}
 }
