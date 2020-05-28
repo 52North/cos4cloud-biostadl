@@ -1,5 +1,13 @@
 version: '3'
 services:
+  httpd:
+    build: ./httpd
+    ports:
+      - 8888:80
+        #volumes:
+        #- ./httpd/htdocs/:/usr/local/apache2/htdocs
+    depends_on:
+      - sta
   sta:
     image: 52north/sensorweb-server-sta:latest
     # build: https://github.com/52North/sensorweb-server-sta.git#develop
@@ -40,3 +48,5 @@ services:
     # For debug/show purposes!
     ports:
       - 5432:5432
+
+
