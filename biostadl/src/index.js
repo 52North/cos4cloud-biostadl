@@ -322,6 +322,19 @@ function createThing(record, sensorId, observationRecords) {
   const datastreams = Object.keys(observationRecords)
                             .map(observedPropertyName => createDatastream(record, sensorId, observedPropertyName, observationRecords))
                             .filter(value => value !== undefined);
+  const historicalLocations = [];
+  datastreams.forEach(datastream => {
+    const observations = datastream.Observations;
+    for (let observation of observations) {
+      const foi = observation.FeatureOfInterest;
+      const location = createLocation(foi.feature);
+      const time = observation.phenomenonTime;
+      historicalLocations.push({
+        time,
+        Locations: [location]
+      })
+    }
+  })
   // const historicalLocations = createHistoricalLocations(re)
   const thing = {
     name: user,
@@ -330,17 +343,15 @@ function createThing(record, sensorId, observationRecords) {
       uri: natusferaBaseUrl + "/users/" + record.user_id,
       id: record.user_id
     },
-    Datastreams: datastreams
+    Datastreams: datastreams,
+    HistoricalLocations: historicalLocations
   };
-
-  // const location = createLocation(record);
-  // update thing location /!\ cannot set time for HistoricalLocations
 
   return thing;
 }
 
 function createDatastream(record, sensorId, observedPropertyName, observationRecords) {
-  const observationValues = createObservationValues(record, observedPropertyName, observationRecords)
+  const observationValues = createObservationValues(record, observedPropertyName, observationRecords);
   const observation = observationRecords[observedPropertyName]
   
   const user = record.user_login;
@@ -437,14 +448,14 @@ async function createNewObservations(output) {
         });
   }
 
-// function createLocation(record) {
-//   return {
-//     name: "observed location",
-//     description: "The location where the observation has been made (insitu for now)",
-//     encodingType: "application/vnd.geo+json",
-//     location: record.location
-//   }
-// }
+function createLocation(geometry) {
+  return {
+    name: "observed location",
+    description: "The location where the observation has been made (insitu for now)",
+    encodingType: "application/vnd.geo+json",
+    location: geometry
+  }
+}
 
 // REQUEST METHODS
 
