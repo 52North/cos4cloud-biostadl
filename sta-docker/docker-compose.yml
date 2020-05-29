@@ -2,14 +2,21 @@ version: '3'
 services:
   httpd:
     build: ./httpd
+    env_file:
+      - ./oidc.env
     ports:
-      - 8888:80
-        #volumes:
-        #- ./httpd/htdocs/:/usr/local/apache2/htdocs
-    depends_on:
-      - sta
+      - ${HTTPD_PORT}:80
+    volumes:
+      - ./httpd/htdocs/:/usr/local/apache2/htdocs
+    environment:
+      HTTPD_HOST: ${HTTPD_HOST}
+      HTTPD_PORT: ${HTTPD_PORT}
+      HTTPD_STA_PATH: ${HTTPD_STA_PATH}
+      HTTPD_LOG_LEVEL: ${HTTPD_LOG_LEVEL}
+      HTTPD_OIDC_LOG_LEVEL: ${HTTPD_OIDC_LOG_LEVEL}
   sta:
     image: 52north/sensorweb-server-sta:latest
+    env_file: .env
     # build: https://github.com/52North/sensorweb-server-sta.git#develop
     ports:
       - 8080:8081
@@ -18,18 +25,22 @@ services:
     volumes:
       - ./sta/application.yml:/app/application.yml
     environment:
-      LOGGING_LEVEL_ROOT: INFO
-      LOGGING_LEVEL_ORG_N52: TRACE
+      LOGGING_LEVEL_ROOT: ${STA_LOGGING_LEVEL_ROOT}
+      LOGGING_LEVEL_ORG_N52: ${STA_LOGGING_LEVEL_ORG_N52}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: TRACE
+      SPRING_HTTP_LOG-REQUEST-DETAILS: "true"
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/sta
-      SPING_JPA_PROPERTIES_HIBERNATE_HBM2DDL: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL: ${STA_SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL}
       MQTT_BROKER_PLAINTCP_ENABLED: "true"
       MQTT_BROKER_WEBSOCKET_ENABLED: "true"
       MQTT_BROKER_PERSISTENCE_ENABLED: "false"
-      SERVER_ROOTURL: http://localhost:8080/sta/
+      SERVER_ROOTURL: ${STA_SERVER_ROOT_URL}
       SERVER_SERVLET_CONTEXT_PATH: /sta
       SERVER_FEATURE_UPDATEFOI: "false"
       SERVER_FEATURE_MQTTPUBLISHTOPICS: Observations
       SERVER_FEATURE_VARIABLEENCODINGTYPE: "false"
+      SERVER_FEATURE_HTTPREADONLY: "${STA_HTTP_READ_ONLY}"
+      SERVER_FEATURE_MQTTREADONLY: "${STA_MQTT_READ_ONLY}"
       SERVER_FEATURE_ISMOBILE: "false"
     restart: on-failure:10
     depends_on:

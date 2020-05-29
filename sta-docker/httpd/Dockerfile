@@ -2,15 +2,23 @@ FROM httpd:2.4
 
 RUN apt-get update && apt-get install -y \
     libapache2-mod-auth-openidc \
-#    libapache2-mod-jk \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/lib/apache2/modules/mod_auth_openidc.so /usr/local/apache2/modules/mod_auth_openidc.so
 
-ENV OIDC_REDIRECT_URI http://localhost:8888/sta/redirect_uri
+ENV HTTPD_PORT 8888
+ENV HTTPD_STA_PATH "/sta"
+ENV OIDC_PROVIDER_METADATA_URL "https://www.authenix.eu/.well-known/openid-configuration"
+ENV OIDC_PROVIDER_END_SESSION_ENDPOINT "https://authenix.eu/oauth/logout"
+ENV OIDC_RESPONSE_TYPE "code id_token"
+ENV OIDC_RESPONSE_MODE "query"
+ENV OIDC_SSL_VALIDATE_SERVER "On"
 
-COPY ./conf/httpd.conf /usr/local/apache2/conf/httpd.conf
-COPY ./conf/extra/* /usr/local/apache2/conf/extra/
-COPY ./htdocs/* /usr/local/apache2/htdocs/
+ENV OIDC_CLIENT_ID "<your_client_id>"
+ENV OIDC_CLIENT_SECRET "<your_client_secret>"
+ENV OIDC_REDIRECT_URI "http://localhost/sta/redirect_uri"
+ENV OIDC_SCOPE "openid"
+
+COPY . .
 
 LABEL maintainer="Henning Bredel <h.bredel@52north.org>" \
                   org.opencontainers.image.title="52°North Sensor Things API" \
