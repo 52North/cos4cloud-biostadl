@@ -383,7 +383,7 @@ function createObservationValue(record, observation) {
     return undefined;
   }
 
-  return {
+  const value = {
     phenomenonTime: observationtime,
     resultTime: observationtime,
     result: observation.species_guess,
@@ -407,6 +407,18 @@ function createObservationValue(record, observation) {
       feature: record.location
     },
   };
+
+  record.observation_photos.forEach((photo, index) => {
+    /*
+      id: data["photo_id_" + i],
+      attribution: data["photo_attribution_" + i],
+      url: data["photo_large_url_" + i]
+    */
+   value.parameters.push({name: "photo_id_" + index, value: photo.id });
+   value.parameters.push({name: "photo_attribution_" + index, value: photo.attribution });
+   value.parameters.push({name: "photo_url_" + index, value: photo.url });
+  });
+  return value;
 }
 
 async function createNewObservations(output) {
