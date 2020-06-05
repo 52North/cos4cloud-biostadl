@@ -4,18 +4,19 @@ services:
     build: ./httpd
     networks:
       - backend
-    env_file: 
+    env_file:
       - oidc.env
-    ports: 
+    ports:
       - 80:80
       - 443:443
     volumes:
       - ./httpd/htdocs/:/usr/local/apache2/htdocs
       - ${HTTPD_SSL_CRT}:/usr/local/apache2/conf/cert.crt
       - ${HTTPD_SSL_KEY}:/usr/local/apache2/conf/cert.key
-    environment: 
+    environment:
       HTTPD_LOG_LEVEL: ${HTTPD_LOG_LEVEL}
       HTTPD_SSL_LOG_LEVEL: ${HTTPD_SSL_LOG_LEVEL}
+      HTTPD_PROTOCOL: ${HTTPD_PROTOCOL}
       HTTPD_HOST: ${HTTPD_HOST}
       HTTPD_STA_PATH: ${HTTPD_STA_PATH}
       # substitude module does not resolve nested variables, so we have to use /.env
@@ -60,9 +61,9 @@ services:
 
   database:
     image: mdillon/postgis
-    networks: 
+    networks:
       - backend
-    volumes: 
+    volumes:
       - db-data:/var/lib/postgresql/data
     restart: on-failure
     environment:
