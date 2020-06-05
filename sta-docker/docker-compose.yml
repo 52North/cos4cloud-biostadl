@@ -29,9 +29,7 @@ services:
     #   restart_policy:
     #     condition: on-failure
   sta:
-    image: 52north/sensorweb-server-sta:latest
-    env_file: .env
-    # build: https://github.com/52North/sensorweb-server-sta.git#develop
+    image: 52north/sensorweb-server-sta:2.1.2
     networks:
       - backend
     ports:
