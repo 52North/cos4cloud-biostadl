@@ -70,14 +70,13 @@ function loadData(data) {
           });
         }
 
-        if (record.user_id) {
+        if (record.user_id && record.location) {
           output.push(record);
         }
       });
 
     }).on("end", async () => {
-      createNewThings(output).then(() => console.log("done"))
-                             .catch(error => {
+      createNewThings(output).catch(error => {
                                console.error(error)
                               });
     });
@@ -93,6 +92,7 @@ function createPoint(data) {
     //console.warn("invalid location data (lon: " + data.longitude + ", lat: " + data.latitude + ")");
     lon = 0;
     lat = 0;
+    return undefined;
   }
   return {
     type: "Point",
