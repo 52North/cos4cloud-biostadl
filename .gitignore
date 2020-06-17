@@ -104,3 +104,6 @@ dist
 .tern-port
 RitmeNatura_odc.csv
 oidc.env
+
+# vs code settings
+.vscode/settings.json
