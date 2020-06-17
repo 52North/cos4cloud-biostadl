@@ -23,6 +23,7 @@
     "@angular/router": "~8.2.14",
     "@helgoland/core": "^1.0.0-beta.21",
     "@helgoland/map": "^1.0.0-beta.21",
+    "angular-oauth2-oidc": "^9.1.0",
     "hammerjs": "^2.0.8",
     "rxjs": "~6.4.0",
     "tslib": "^1.10.0",
