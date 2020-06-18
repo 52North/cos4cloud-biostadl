@@ -6,7 +6,8 @@ import { MapComponent } from './pages/map/map.component';
 const routes: Routes = [
   {
     path: '',
-    component: MapComponent
+    component: MapComponent,
+    // canActivate: [AuthGuard]
   }
 ];
 

@@ -44,4 +44,6 @@ export class AuthService {
 
   public get identityClaims() { return this.oauthService.getIdentityClaims(); }
 
+  public get accessToken() { return this.oauthService.getAccessToken(); }
+
 }

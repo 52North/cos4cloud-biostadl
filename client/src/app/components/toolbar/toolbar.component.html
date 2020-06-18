@@ -1,10 +1,11 @@
 <mat-toolbar>
-  <span>cos4cloud</span>
+  <span>cos4cloud-client</span>
 
-  <div *ngIf="(isAuthenticated | async)">
-    <span> {{ userName }} - {{ expirationDate }} </span>
-  </div>
+  <div style="flex: 1"></div>
 
-  <button *ngIf="!(isAuthenticated | async)" (click)="login()">Login</button>
-  <button *ngIf="(isAuthenticated | async)" (click)="logout()">Logout</button>
+  <div *ngIf="(isAuthenticated | async)" style="padding-right: 20px;"> {{ userName }} </div>
+
+  <button mat-raised-button color="primary" *ngIf="!(isAuthenticated | async)" (click)="login()">Login</button>
+  <button mat-raised-button color="primary" *ngIf="(isAuthenticated | async)" (click)="logout()">Logout</button>
+
 </mat-toolbar>
