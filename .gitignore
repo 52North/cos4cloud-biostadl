@@ -107,3 +107,6 @@ oidc.env
 
 # vs code settings
 .vscode/settings.json
+
+# temporary auth config file
+client/src/app/auth.config.ts
