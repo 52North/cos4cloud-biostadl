@@ -1,0 +1,3 @@
+<div style="width: 100%; height: 500px; margin: 10px;" *ngIf="(authenticated | async)">
+  <n52-geometry-map-viewer (mapInitialized)="mapInitialized($event)"></n52-geometry-map-viewer>
+</div>

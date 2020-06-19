@@ -1,0 +1,11 @@
+<mat-toolbar>
+  <span>cos4cloud-client</span>
+
+  <div style="flex: 1"></div>
+
+  <div *ngIf="(isAuthenticated | async)" style="padding-right: 20px;"> {{ userName }} </div>
+
+  <button mat-raised-button color="primary" *ngIf="!(isAuthenticated | async)" (click)="login()">Login</button>
+  <button mat-raised-button color="primary" *ngIf="(isAuthenticated | async)" (click)="logout()">Logout</button>
+
+</mat-toolbar>
