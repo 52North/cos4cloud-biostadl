@@ -13,8 +13,10 @@ ENV STA_SERVER_ROOT_URL "${HTTPD_PROTOCOL}://${HTTPD_HOST}${HTTPD_STA_PATH}/"
 ENV HTTPD_LOG_LEVEL "info"
 ENV HTTPD_OIDC_LOG_LEVEL "info"
 
+# testsystem: 78.46.190.103 
 ENV HTTPD_OIDC_PROVIDER_METADATA_URL "https://www.authenix.eu/.well-known/openid-configuration"
 ENV HTTPD_OIDC_PROVIDER_END_SESSION_ENDPOINT "https://authenix.eu/oauth/logout"
+ENV HTTPD_OAUTH_INTROSPECTION_ENDPOINT "https://www.authenix.eu/oauth/tokeninfo"
 
 ENV HTTPD_OIDC_CLIENT_ID "<your_client_id>"
 ENV HTTPD_OIDC_CLIENT_SECRET "<your_client_secret>"
