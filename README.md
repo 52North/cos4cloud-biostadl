@@ -9,7 +9,7 @@ OGC SensorThings API)
 
 ## Important Notice
 
-The work is under continous progress. There are no plans yet to raise this tool to a
+The work is under continuous progress. There are no plans yet to raise this tool to a
 higher (or even production) level!
 
 The tool is licensed under [MIT license](LICENSE). Use it for free on your own risk.
