@@ -5,9 +5,9 @@ const parse = require('csv-parse');
 
 
 // CONSTANTS
-const filePath = "./RitmeNatura_odc.csv";
+const filePath = "./RitmeNatura_odc_exerpt_1.csv";
 const natusferaBaseUrl = "https://natusfera.gbif.es";
-const staBaseUrl = "http://localhost:8080/sta";
+const staBaseUrl = "http://192.168.65.129:8080/sta";
 const emptyUOM = {
   name: null,
   symbol: null,
@@ -15,6 +15,7 @@ const emptyUOM = {
 };
 
 fs.readFile(filePath, (err, data) => {
+  //console.log(err);
   if (err) {
     superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
             .set("user-agent", "some-agent")
@@ -47,9 +48,17 @@ function loadData(data) {
             taxon: {
               observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
               taxon_name: data.taxon_name,
-              species_guess: data.species_guess,
-              fenofase: data.Fenofase
+              result: data.species_guess,
+              fenofase: data.Fenofase,
+              quality_grade : data.quality_grade
             },
+            photo_0: {
+              observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TextObservation",
+              taxon_name: data.taxon_name,
+              result: data.photo_large_url_0,
+              fenofase: data.Fenofase,
+              quality_grade : data.quality_grade
+            }
             //},{
             //  fenofase: {
             //   observedProperty: "fenofase",
@@ -60,7 +69,7 @@ function loadData(data) {
           time_observed_at: data.time_observed_at,
           location: createPoint(data)
         };
-
+        
         record.observation_photos = [];
         for (let i = 0 ; i < data.observation_photos_count ; i++) {
           record.observation_photos.push({
@@ -114,12 +123,27 @@ async function createNewThings(output) {
   // observed property
   const observedPropertiesResponse = (await getObservedProperties()).body;
   const taxonObservedProperty = {
-    name: "Taxon",
+    name: "taxon",
     description: "The canonical name of the observed species",
     definition: "http://purl.org/biodiversity/taxon/"
   };
-  const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === "Taxon");
-  const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(taxonObservedProperty)).body["@iot.id"];
+  const photoObservedProperty = {
+    name: "photo_0",
+    description: "A photo of the observed species",
+    definition: "http://purl.org/net/photo"
+  };
+
+  const localObservedProperties = [photoObservedProperty, taxonObservedProperty];
+  debugger;
+
+  let observedPropertyNameIdMap = await createObs(localObservedProperties, observedPropertiesResponse);
+
+  console.log("observedPropertyNameIdMap " + observedPropertyNameIdMap);
+  debugger;
+
+  //const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === "Taxon");
+  //const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(taxonObservedProperty)).body["@iot.id"];
+  //debugger;
 
   const observationsByUserLogin = {};
   output.forEach(record => {
@@ -127,15 +151,16 @@ async function createNewThings(output) {
     if (!observationsByUserLogin[user_login]) {
       observationsByUserLogin[user_login] = {};
     }
-    const userObservations = observationsByUserLogin[user_login];
+    const userObservations = observationsByUserLogin[user_login];    
     const observation = record.observation;
     Object.keys(observation)
           .forEach(observedPropertyName => {
             const observationValue = observation[observedPropertyName];
             if (!userObservations[observedPropertyName]) {
+              //debugger;
               userObservations[observedPropertyName] = {
                 observationType: observationValue.observationType,
-                observedPropertyId: observedPropertyId,
+                observedPropertyId: observedPropertyNameIdMap[observedPropertyName],
                 values: []
               };
             }
@@ -144,7 +169,11 @@ async function createNewThings(output) {
           });
   });
 
+  //await createObs();
+  //debugger;
+
   const things = (await getThings()).body;
+  //debugger;
   const thingNames = things.value.map(thing => thing.name);
 
   const newThings = {};
@@ -181,8 +210,28 @@ async function createNewThings(output) {
   }
 }
 
+async function createObs(localObservedProperties, observedPropertiesResponse) {
+
+  let observedPropertyNameIdMap = {};
+
+   console.log("createObs executed " + localObservedProperties[0]);   
+
+  for (let localObservedProperty of localObservedProperties) {    
+    const localObservedPropertyName = localObservedProperty.name;
+    console.log("Check");
+    //console.log(localObservedProperty);
+    const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === localObservedPropertyName);
+    //console.log(observedProperty);
+    const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(localObservedProperty)).body["@iot.id"];
+    console.log(observedPropertyId);
+    observedPropertyNameIdMap[localObservedPropertyName] = observedPropertyId;
+  }
+  return observedPropertyNameIdMap;
+}
+
 function createThing(record, sensorId, observationRecords) {
   const user = record.user_login;
+  debugger;
   const datastreams = Object.keys(observationRecords)
                             .map(observedPropertyName => createDatastream(record, sensorId, observedPropertyName, observationRecords))
                             .filter(value => value !== undefined);
@@ -216,9 +265,10 @@ function createThing(record, sensorId, observationRecords) {
 
 function createDatastream(record, sensorId, observedPropertyName, observationRecords) {
   const observationValues = createObservationValues(record, observedPropertyName, observationRecords);
-  const observation = observationRecords[observedPropertyName]
+  const observation = observationRecords[observedPropertyName];
   
   const user = record.user_login;
+  debugger;
   return {
     name: "Datastream of user " + user + " (observing " + observedPropertyName + ")",
     description: "An observation datastream taken from a Citizen Scientist via mobile phone",
@@ -247,10 +297,13 @@ function createObservationValue(record, observation) {
     return undefined;
   }
 
+  //console.log(observation.quality_grade);
+
   const value = {
     phenomenonTime: observationtime,
     resultTime: observationtime,
-    result: observation.species_guess,
+    result: observation.result,
+    resultQuality: observation.quality_grade,
     parameters: [
       {
         name: "taxon_name",
@@ -379,6 +432,7 @@ async function postObservedProperty(observedProperty) {
 }
 
 async function postThing(thing) {
+  console.log(thing);
   return sendPost(staBaseUrl + "/Things", thing);
 }
 
