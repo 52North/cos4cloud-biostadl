@@ -7,7 +7,7 @@ const parse = require('csv-parse');
 // CONSTANTS
 const filePath = "./RitmeNatura_odc_exerpt_1.csv";
 const natusferaBaseUrl = "https://natusfera.gbif.es";
-const staBaseUrl = "http://192.168.65.129:8080/sta";
+const staBaseUrl = "http://localhost:8081/sta";
 const emptyUOM = {
   name: null,
   symbol: null,
@@ -53,7 +53,7 @@ function loadData(data) {
               quality_grade : data.quality_grade
             },
             photo_0: {
-              observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TextObservation",
+              observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
               taxon_name: data.taxon_name,
               result: data.photo_large_url_0,
               fenofase: data.Fenofase,
@@ -110,6 +110,8 @@ function createPoint(data) {
 }
 
 async function createNewThings(output) {
+
+  //sensor
   const sensorsResponse = (await getSensors()).body;
   const citSciSensor = {
     name: "Citizen Scientist",
@@ -119,6 +121,38 @@ async function createNewThings(output) {
   };
   const sensor = sensorsResponse.value.find(sensor => sensor.name === "Citizen Scientist");
   const sensorId = sensor ? sensor["@iot.id"] : (await postSensor(citSciSensor)).body["@iot.id"];
+  
+  //project
+  const projectsResponse = (await getProjects()).body;
+  const citSciProject = {
+    //"@iot.id": projectId,
+    name: "Demo Project.",
+    description: "This is a demo project",
+    runtime: "2020-06-25T03:42:02-02:00",
+    CSDatastreams: []
+  };
+  const project = projectsResponse.value.find(project => project.name === "Demo Project.");
+  const projectId = project ? project["@iot.id"] : (await postProject(citSciProject)).body["@iot.id"];
+  
+  //party
+  const partiesResponse = (await getParties()).body;
+  const citSciParty = {
+    nickName: "Demo Party nickName",
+    role: "individual",
+    CSDatastreams: []
+  };
+  const party = partiesResponse.value.find(party => party.name === "Demo Party nickName");
+  const partyId = party ? party["@iot.id"] : (await postParty(citSciParty)).body["@iot.id"];
+  
+  //license
+  const licensesResponse = (await getLicenses()).body;
+  const citSciLicense = {
+    name: "MIT License",
+    definition: "https://opensource.org/licenses/MIT",
+    CSDatastreams: []
+  };
+  const license = licensesResponse.value.find(license => license.name === "Demo License.");
+  const licenseId = license ? license["@iot.id"] : (await postLicense(citSciLicense)).body["@iot.id"];
 
   // observed property
   const observedPropertiesResponse = (await getObservedProperties()).body;
@@ -177,7 +211,8 @@ async function createNewThings(output) {
   const thingNames = things.value.map(thing => thing.name);
 
   const newThings = {};
-  output.forEach(record => {
+  for (let record of output) {
+  //output.forEach(async(record) => {
     if (!newThings[record.id] && !thingNames.includes(record.user_login)) {
       const user_login = record.user_login;
       const observationRecords = observationsByUserLogin[user_login];
@@ -201,9 +236,9 @@ async function createNewThings(output) {
       //   }
       // });
 
-      newThings[record.user_id] = createThing(record, sensorId, observationRecords);
+      newThings[record.user_id] = await createThing(record, sensorId, projectId, partyId, licenseId, observationRecords);
     }
-  });
+  };
 
   for (let user_id of Object.keys(newThings)) {
     postThing(newThings[user_id]);
@@ -218,26 +253,30 @@ async function createObs(localObservedProperties, observedPropertiesResponse) {
 
   for (let localObservedProperty of localObservedProperties) {    
     const localObservedPropertyName = localObservedProperty.name;
-    console.log("Check");
+    //console.log("Check");
     //console.log(localObservedProperty);
     const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === localObservedPropertyName);
     //console.log(observedProperty);
     const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(localObservedProperty)).body["@iot.id"];
-    console.log(observedPropertyId);
+    //console.log(observedPropertyId);
     observedPropertyNameIdMap[localObservedPropertyName] = observedPropertyId;
   }
   return observedPropertyNameIdMap;
 }
 
-function createThing(record, sensorId, observationRecords) {
+async function createThing(record, sensorId, projectId, partyId, licenseId, observationRecords) {
+  
+  let groupId = await createObsGroup(record.id);
+
+  console.log("Group id " + groupId);
+
   const user = record.user_login;
-  debugger;
   const datastreams = Object.keys(observationRecords)
-                            .map(observedPropertyName => createDatastream(record, sensorId, observedPropertyName, observationRecords))
+                            .map(observedPropertyName => createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, observedPropertyName, observationRecords))
                             .filter(value => value !== undefined);
   const historicalLocations = [];
   datastreams.forEach(datastream => {
-    const observations = datastream.Observations;
+    const observations = datastream.CSObservations;
     for (let observation of observations) {
       const foi = observation.FeatureOfInterest;
       const location = createLocation(foi.feature);
@@ -256,15 +295,29 @@ function createThing(record, sensorId, observationRecords) {
       uri: natusferaBaseUrl + "/users/" + record.user_id,
       id: record.user_id
     },
-    Datastreams: datastreams,
+    CSDatastreams: datastreams,
     HistoricalLocations: historicalLocations
   };
 
   return thing;
 }
 
-function createDatastream(record, sensorId, observedPropertyName, observationRecords) {
-  const observationValues = createObservationValues(record, observedPropertyName, observationRecords);
+async function createObsGroup(recordId){  
+  // group
+  const groupsResponse = (await getGroups()).body;
+  const citSciGroup = {
+    "@iot.id": "group_" + recordId,
+    name: "Observation group " + recordId,
+    description: "Observation belonging to group " + recordId,
+    relations: []
+  };
+  const group = groupsResponse.value.find(group => group.name === "Observation group " + recordId);
+  const groupId = group ? group["@iot.id"] : (await postGroup(citSciGroup)).body["@iot.id"];
+  return "group_" + recordId;
+}
+
+function createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, observedPropertyName, observationRecords) {
+  const observationValues = createObservationValues(record, observedPropertyName, observationRecords, groupId);
   const observation = observationRecords[observedPropertyName];
   
   const user = record.user_login;
@@ -280,17 +333,26 @@ function createDatastream(record, sensorId, observedPropertyName, observationRec
     Sensor: {
       "@iot.id": sensorId
     },
-    Observations: observationValues
+    CSObservations: observationValues,
+    License : {
+      "@iot.id": licenseId
+    },
+    Party: {
+      "@iot.id": partyId
+    },
+    Project: {
+      "@iot.id": projectId
+    }
   };
 }
 
-function createObservationValues(record, observedPropertyName, observation) {
+function createObservationValues(record, observedPropertyName, observation, groupId) {
   const observationvalue = observation[observedPropertyName];
-  return observationvalue.values.map(value => createObservationValue(record, value))
+  return observationvalue.values.map(value => createObservationValue(record, value, observedPropertyName, groupId))
                                 .filter(o => o !== undefined);
 }
 
-function createObservationValue(record, observation) {
+function createObservationValue(record, observation, observedPropertyName, groupId) {
   const observationtime = record.time_observed_at;
   if (!observationtime || observationtime.length === 0) {
     //console.log("Observation time is not available! " + JSON.stringify(record, null, 2));
@@ -319,10 +381,19 @@ function createObservationValue(record, observation) {
     ],
     FeatureOfInterest: {
       name: "observed location",
-      description: "insitu location where taxon observation has been made",
+      description: "insitu location where " + observedPropertyName + " observation has been made",
       encodingType: "application/vnd.geo+json",
       feature: record.location
     },
+    ObservationRelations: [
+      {
+        "@iot.id": "testRelation" + record.id + "_" + observedPropertyName,
+        "type": "root",
+        "Group": {
+            "@iot.id": groupId
+        }
+      }      
+    ]
   };
 
   record.observation_photos.forEach((photo, index) => {
@@ -405,6 +476,22 @@ async function getDataStreams(query) {
   return sendGet(staBaseUrl + "/Datastreams", query);
 }
 
+async function getProjects(query) {
+  return sendGet(staBaseUrl + "/Projects", query);
+}
+
+async function getParties(query) {
+  return sendGet(staBaseUrl + "/Parties", query);
+}
+
+async function getLicenses(query) {
+  return sendGet(staBaseUrl + "/Licenses", query);
+}
+
+async function getGroups(query) {
+  return sendGet(staBaseUrl + "/ObservationGroups", query);
+}
+
 async function sendGet(url, query) {
   // if (query) {
   //   console.log("GETting: " + url + " and query " + JSON.stringify(query, null, 2));
@@ -432,8 +519,26 @@ async function postObservedProperty(observedProperty) {
 }
 
 async function postThing(thing) {
-  console.log(thing);
   return sendPost(staBaseUrl + "/Things", thing);
+}
+
+async function postProject(project) {
+  console.log(project);
+  return sendPost(staBaseUrl + "/Projects", project);
+}
+
+async function postParty(party) {
+  return sendPost(staBaseUrl + "/Parties", party);
+}
+
+async function postLicense(license) {
+  console.log(license);
+  return sendPost(staBaseUrl + "/Licenses", license);
+}
+
+async function postGroup(group) {
+  console.log(group);
+  return sendPost(staBaseUrl + "/ObservationGroups", group);
 }
 
 async function sendPost(url, payload) {
