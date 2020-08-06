@@ -51,13 +51,6 @@ function loadData(data) {
               result: data.species_guess,
               fenofase: data.Fenofase,
               quality_grade : data.quality_grade
-            },
-            photo_0: {
-              observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
-              taxon_name: data.taxon_name,
-              result: data.photo_large_url_0,
-              fenofase: data.Fenofase,
-              quality_grade : data.quality_grade
             }
             //},{
             //  fenofase: {
@@ -67,17 +60,31 @@ function loadData(data) {
             // }
           },
           time_observed_at: data.time_observed_at,
-          location: createPoint(data)
+          location: createPoint(data),
+          project: {
+            id: data.project_id_0,
+            title: data.project_title_0
+          }
         };
-        
-        record.observation_photos = [];
+
         for (let i = 0 ; i < data.observation_photos_count ; i++) {
-          record.observation_photos.push({
-            id: data["photo_id_" + i],
-            attribution: data["photo_attribution_" + i],
-            url: data["photo_large_url_" + i]
-          });
+          record.observation["photo_" + i] = {
+            observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+            taxon_name: data.taxon_name,
+            result: data["photo_large_url_" + i],
+            fenofase: data.Fenofase,
+            quality_grade : data.quality_grade
+          }
         }
+
+        // record.observation_photos = [];
+        // for (let i = 0 ; i < data.observation_photos_count ; i++) {
+        //   record.observation_photos.push({
+        //     id: data["photo_id_" + i],
+        //     attribution: data["photo_attribution_" + i],
+        //     url: data["photo_large_url_" + i]
+        //   });
+        // }
 
         if (record.user_id && record.location) {
           output.push(record);
@@ -120,20 +127,8 @@ async function createNewThings(output) {
     metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
   };
   const sensor = sensorsResponse.value.find(sensor => sensor.name === "Citizen Scientist");
-  const sensorId = sensor ? sensor["@iot.id"] : (await postSensor(citSciSensor)).body["@iot.id"];
-  
-  //project
-  const projectsResponse = (await getProjects()).body;
-  const citSciProject = {
-    //"@iot.id": projectId,
-    name: "Demo Project.",
-    description: "This is a demo project",
-    runtime: "2020-06-25T03:42:02-02:00",
-    CSDatastreams: []
-  };
-  const project = projectsResponse.value.find(project => project.name === "Demo Project.");
-  const projectId = project ? project["@iot.id"] : (await postProject(citSciProject)).body["@iot.id"];
-  
+  const sensorId = sensor ? sensor["@iot.id"] : (await postSensor(citSciSensor)).body["@iot.id"];  
+
   //party
   const partiesResponse = (await getParties()).body;
   const citSciParty = {
@@ -162,18 +157,18 @@ async function createNewThings(output) {
     definition: "http://purl.org/biodiversity/taxon/"
   };
   const photoObservedProperty = {
-    name: "photo_0",
+    name: "photo",
     description: "A photo of the observed species",
     definition: "http://purl.org/net/photo"
   };
 
   const localObservedProperties = [photoObservedProperty, taxonObservedProperty];
-  debugger;
+  //debugger;
 
   let observedPropertyNameIdMap = await createObs(localObservedProperties, observedPropertiesResponse);
 
   console.log("observedPropertyNameIdMap " + observedPropertyNameIdMap);
-  debugger;
+  //debugger;
 
   //const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === "Taxon");
   //const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(taxonObservedProperty)).body["@iot.id"];
@@ -191,10 +186,13 @@ async function createNewThings(output) {
           .forEach(observedPropertyName => {
             const observationValue = observation[observedPropertyName];
             if (!userObservations[observedPropertyName]) {
-              //debugger;
+              let photo = false;
+              if(observedPropertyName.includes("photo")){
+                photo = true;
+              }
               userObservations[observedPropertyName] = {
                 observationType: observationValue.observationType,
-                observedPropertyId: observedPropertyNameIdMap[observedPropertyName],
+                observedPropertyId: photo ? observedPropertyNameIdMap["photo"] : observedPropertyNameIdMap[observedPropertyName],
                 values: []
               };
             }
@@ -216,6 +214,25 @@ async function createNewThings(output) {
     if (!newThings[record.id] && !thingNames.includes(record.user_login)) {
       const user_login = record.user_login;
       const observationRecords = observationsByUserLogin[user_login];
+
+      //project
+      const projectsResponse = (await getProjects()).body;
+      
+      const projectId = "project_" + record.project.id;
+      
+      const citSciProject = {
+        "@iot.id": projectId,
+        name: record.project.title,
+        description: "This is a demo project",
+        runtime: "2020-06-25T03:42:02-02:00",
+        CSDatastreams: []
+      };
+      const project = projectsResponse.value.find(project => project.id === projectId);
+      
+      if(!project){
+        await postProject(citSciProject)
+      }
+      
       // output.forEach(observationRecord => {
       //   if (observationRecord.user_login === user_login) {
       //     // may contain multiple observations
@@ -235,6 +252,8 @@ async function createNewThings(output) {
       //           })
       //   }
       // });
+
+      debugger;
 
       newThings[record.user_id] = await createThing(record, sensorId, projectId, partyId, licenseId, observationRecords);
     }
@@ -302,7 +321,7 @@ async function createThing(record, sensorId, projectId, partyId, licenseId, obse
   return thing;
 }
 
-async function createObsGroup(recordId){  
+async function createObsGroup(recordId){
   // group
   const groupsResponse = (await getGroups()).body;
   const citSciGroup = {
@@ -362,6 +381,7 @@ function createObservationValue(record, observation, observedPropertyName, group
   //console.log(observation.quality_grade);
 
   const value = {
+    ["@iot.id"] : record.id + "_" + observedPropertyName,
     phenomenonTime: observationtime,
     resultTime: observationtime,
     result: observation.result,
@@ -387,7 +407,7 @@ function createObservationValue(record, observation, observedPropertyName, group
     },
     ObservationRelations: [
       {
-        "@iot.id": "testRelation" + record.id + "_" + observedPropertyName,
+        "@iot.id": "testRelation_" + record.id + "_" + observedPropertyName,
         "type": "root",
         "Group": {
             "@iot.id": groupId
@@ -396,16 +416,16 @@ function createObservationValue(record, observation, observedPropertyName, group
     ]
   };
 
-  record.observation_photos.forEach((photo, index) => {
-    /*
-      id: data["photo_id_" + i],
-      attribution: data["photo_attribution_" + i],
-      url: data["photo_large_url_" + i]
-    */
-   value.parameters.push({name: "photo_id_" + index, value: photo.id });
-   value.parameters.push({name: "photo_attribution_" + index, value: photo.attribution });
-   value.parameters.push({name: "photo_url_" + index, value: photo.url });
-  });
+  // record.observation_photos.forEach((photo, index) => {
+  //   /*
+  //     id: data["photo_id_" + i],
+  //     attribution: data["photo_attribution_" + i],
+  //     url: data["photo_large_url_" + i]
+  //   */
+  //  value.parameters.push({name: "photo_id_" + index, value: photo.id });
+  //  value.parameters.push({name: "photo_attribution_" + index, value: photo.attribution });
+  //  value.parameters.push({name: "photo_url_" + index, value: photo.url });
+  // });
   return value;
 }
 
