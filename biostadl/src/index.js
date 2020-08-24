@@ -5,7 +5,7 @@ const parse = require('csv-parse');
 
 
 // CONSTANTS
-const filePath = "./RitmeNatura_odc_exerpt_2.csv";
+const filePath = "./RitmeNatura_odc.csv";
 const natusferaBaseUrl = "https://natusfera.gbif.es";
 const staBaseUrl = "http://localhost:8081/sta";
 const emptyUOM = {
