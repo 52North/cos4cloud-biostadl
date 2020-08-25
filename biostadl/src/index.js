@@ -5,7 +5,7 @@ const parse = require('csv-parse');
 
 
 // CONSTANTS
-const filePath = "./RitmeNatura_odc.csv";
+const filePath = "./RitmeNatura_odc_exerpt_2.csv";
 const natusferaBaseUrl = "https://natusfera.gbif.es";
 const staBaseUrl = "http://localhost:8081/sta";
 const emptyUOM = {
@@ -70,6 +70,8 @@ function loadData(data) {
             result: data.species_guess,
             quality_grade : data.quality_grade
           }
+        }else {
+           console.log("No taxon name: " + record.id);
         }
 
         console.log("Obs photo count: " + data.observation_photos_count);
@@ -233,6 +235,7 @@ async function createNewThings(output) {
       if(!project){
         await postProject(citSciProject)
       }
+      debugger;
       newThings[record.user_id] = await createThing(record, sensorId, projectId, partyId, licenseId, observationRecords, observedPropertyNameIdMap);
     }
   };
@@ -246,7 +249,7 @@ async function createObs(localObservedProperties, observedPropertiesResponse) {
 
   let observedPropertyNameIdMap = {};
 
-   console.log("createObs executed " + localObservedProperties[0]);
+   //console.log("createObs executed " + localObservedProperties[0]);
 
   for (let localObservedProperty of localObservedProperties) {    
     const localObservedPropertyName = localObservedProperty.name;
@@ -278,6 +281,7 @@ async function createThing(record, sensorId, projectId, partyId, licenseId, obse
   const featureId = feature ? feature["@iot.id"] : (await postFeature(citSciFeature)).body["@iot.id"];
 
   const user = record.user_login;
+
   const datastreams = Object.keys(observedPropertyNameIdMap)
                             .map(observedPropertyName => createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, featureId, observedPropertyName, observationRecords))
                             .filter(value => value !== undefined);
@@ -330,6 +334,11 @@ function createDatastream(record, sensorId, projectId, partyId, licenseId, group
 
   console.log("Observationvalues: " + observationValues);
   console.log("Record id: " + record.id);
+  
+  if(!observationValues || observationValues.length < 1){
+    console.log("observationValues undefined or empty");
+    return;
+  }
 
   const observation = observationRecords[observedPropertyName];
   
@@ -365,24 +374,10 @@ function createDatastream(record, sensorId, projectId, partyId, licenseId, group
 
 function createObservationValues(record, observedPropertyName, observationRecords, groupId, featureId) {
 
-  // let photoObservations = [];
-  // debugger;
-
-  // if(observedPropertyName.includes("photo")){
-  //   let observationRecordEntries = Object.entries(observationRecords);
-
-  //   for (const [observationRecordName, observationRecord] of observationRecordEntries) {
-  //     if(observationRecordName.includes("photo")){
-  //       photoObservations.push(observationRecord);
-  //     }
-  //   };
-  // }
-
   const observationvalue = observationRecords[observedPropertyName];
   if(!observationvalue) {
     return [];
   }
-  debugger;
   return observationvalue.values.map(value => createObservationValue(record, value, groupId, featureId))
                                 .filter(o => o !== undefined);
 }
@@ -391,11 +386,9 @@ function createObservationValue(record, observation, groupId, featureId) {
   const observationtime = record.time_observed_at;
   if (!observationtime || observationtime.length === 0) {
     //console.log("Observation time is not available! " + JSON.stringify(record, null, 2));
+    console.log("Observation time is not available! Observation will not be included.");
     return undefined;
   }
-
-
-  //console.log(observation.quality_grade);
 
   const value = {
     ["@iot.id"] : record.id + "_" + observation.name,
@@ -537,7 +530,7 @@ async function postObservedProperty(observedProperty) {
 }
 
 async function postThing(thing) {
-  console.log(JSON.stringify(thing));
+  //console.log(JSON.stringify(thing));
   return sendPost(staBaseUrl + "/Things", thing);
 }
 
@@ -576,9 +569,6 @@ async function sendPost(url, payload) {
                      console.error(JSON.stringify(response, null, 2));
                     });
 }
-
-
-
 
 const columns = [
   "Altitud",
