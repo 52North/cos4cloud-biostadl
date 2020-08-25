@@ -93,6 +93,9 @@ function loadData(data) {
 
         if (record.user_id && record.location) {
           output.push(record);
+        }else {
+          console.log("record not added: " + record.id);
+          !record.user_id ? console.log("reason: user id undefined") : console.log("reason: location undefined");
         }
       });
 
@@ -171,52 +174,80 @@ async function createNewThings(output) {
 
   let observedPropertyNameIdMap = await createObs(localObservedProperties, observedPropertiesResponse);
 
-  const observationsByUserLogin = {};
+  // const observationsByUserLogin = {};
 
-  output.forEach(record => {
-    const user_login = record.user_login;
-    if (!observationsByUserLogin[user_login]) {
-      observationsByUserLogin[user_login] = {};
-    }
-    const userObservations = observationsByUserLogin[user_login];    
-    const observation = record.observation;
+  // output.forEach(record => {
+  //   const user_login = record.user_login;
+  //   if (!observationsByUserLogin[user_login]) {
+  //     observationsByUserLogin[user_login] = {};
+  //   }
+  //   const userObservations = observationsByUserLogin[user_login];    
+  //   const observation = record.observation;
  
-    Object.keys(observation)
-          .forEach(observedPropertyName => {
+  //   Object.keys(observation)
+  //         .forEach(observedPropertyName => {
 
-              let photo = false;
-              if(observedPropertyName.includes("photo")){
-                photo = true;
-              }
+  //             let photo = false;
+  //             if(observedPropertyName.includes("photo")){
+  //               photo = true;
+  //             }
 
-            const observationValue = observation[observedPropertyName];
+  //           const observationValue = observation[observedPropertyName];
 
-            if(photo){
-              observedPropertyName = "photo";
-            }
+  //           if(photo){
+  //             observedPropertyName = "photo";
+  //           }
 
-            if (!userObservations[observedPropertyName]) {
-              userObservations[observedPropertyName] = {
-                observationType: observationValue.observationType,
-                observedPropertyId: observedPropertyNameIdMap[observedPropertyName],
-                values: []
-              };
-            }
-            const records = userObservations[observedPropertyName];
-            records.values.push(observationValue);
-          });
-  });
+  //           if (!userObservations[observedPropertyName]) {
+  //             userObservations[observedPropertyName] = {
+  //               observationType: observationValue.observationType,
+  //               observedPropertyId: observedPropertyNameIdMap[observedPropertyName],
+  //               values: []
+  //             };
+  //           }
+  //           const records = userObservations[observedPropertyName];
+  //           records.values.push(observationValue);
+  //         });
+  // });
+  console.log("output length " + output.length);
+  for (let record of output) {
 
   const things = (await getThings()).body;
-
+  
   const thingNames = things.value.map(thing => thing.name);
-
+  
   const newThings = {};
-  for (let record of output) {
   //output.forEach(async(record) => {
     if (!newThings[record.id] && !thingNames.includes(record.user_login)) {
       const user_login = record.user_login;
-      const observationRecords = observationsByUserLogin[user_login];
+      const observationRecords = {};
+    
+      const observation = record.observation;
+
+      Object.keys(observation)
+            .forEach(observedPropertyName => {
+  
+                let photo = false;
+                if(observedPropertyName.includes("photo")){
+                  photo = true;
+                }
+  
+              const observationValue = observation[observedPropertyName];
+  
+              if(photo){
+                observedPropertyName = "photo";
+              }
+  
+              if (!observationRecords[observedPropertyName]) {
+                observationRecords[observedPropertyName] = {
+                  observationType: observationValue.observationType,
+                  observedPropertyId: observedPropertyNameIdMap[observedPropertyName],
+                  values: []
+                };
+              }
+              const records = observationRecords[observedPropertyName];
+              records.values.push(observationValue);
+      });
 
       //project
       const projectsResponse = (await getProjects()).body;
@@ -235,14 +266,106 @@ async function createNewThings(output) {
       if(!project){
         await postProject(citSciProject)
       }
-      debugger;
       newThings[record.user_id] = await createThing(record, sensorId, projectId, partyId, licenseId, observationRecords, observedPropertyNameIdMap);
+      await postThing(newThings[record.user_id]);
+    } else {
+
+      console.log("Thing name exists: " + record.user_login);
+      
+      //create group id
+
+      //create observationValues
+
+      //foreach observation get observedProperty
+
+      //get datastream for observedProperty
+
+      //add datastream id and group id to observation
+
+      //post observation
+
+      const observationRecords = {};
+    
+      const observation = record.observation;
+
+      Object.keys(observation)
+            .forEach(observedPropertyName => {
+  
+                let photo = false;
+                if(observedPropertyName.includes("photo")){
+                  photo = true;
+                }
+  
+              const observationValue = observation[observedPropertyName];
+  
+              if(photo){
+                observedPropertyName = "photo";
+              }
+  
+              if (!observationRecords[observedPropertyName]) {
+                observationRecords[observedPropertyName] = {
+                  observationType: observationValue.observationType,
+                  observedPropertyId: observedPropertyNameIdMap[observedPropertyName],
+                  values: []
+                };
+              }
+              const records = observationRecords[observedPropertyName];
+              records.values.push(observationValue);
+      });
+      //get thing
+      const thing = things.value.filter(thing => thing.name = record.user_login)[0];
+
+      let groupId = "group_" + record.id;
+
+      try {
+          groupId = await createObsGroup(record.id);
+      } catch (error) {
+          console.error(error);
+      }
+
+      const datastreamObservedPropertyIdMap = await createDatastreamObservedPropertyIdMap(thing);
+
+      Object.keys(observedPropertyNameIdMap).forEach(key => {
+        console.log(datastreamObservedPropertyIdMap[key]);
+      })
+
+      const observationValues = Object.keys(observedPropertyNameIdMap)
+      .map(observedPropertyName => createObservationValuesWithDatastream(record, observedPropertyName, observationRecords, groupId, datastreamObservedPropertyIdMap[observedPropertyName]))
+      .filter(value => value !== undefined);
+
+      debugger;
+
+      for (const observationArray of observationValues) {
+        for (const observation of observationArray) {
+          try {
+            await postObservation(observation);            
+          } catch (error) {
+            console.error("Could not post observation to STA. " + JSON.stringify(observation));
+            console.error(error);
+          }
+        }
+      }
     }
   };
 
-  for (let user_id of Object.keys(newThings)) {
-    await postThing(newThings[user_id]);
+  // for (let user_id of Object.keys(newThings)) {
+    
+  // }
+}
+
+async function createDatastreamObservedPropertyIdMap(thing){
+  const thingId = thing["@iot.id"];
+  const csDatastreams = (await getCSDataStreams(thingId)).body;
+
+  let datastreamObservedPropertyIdMap = {};
+
+  for(let csDatastream of csDatastreams.value){
+    const datastreamId = csDatastream["@iot.id"];
+    console.log("DatastreamId: " + datastreamId);
+    const csDatastreamObservedProperties = (await getCSDataStreamsObservedProperties(datastreamId)).body;
+    datastreamObservedPropertyIdMap[csDatastreamObservedProperties.name] = datastreamId;
   }
+  return datastreamObservedPropertyIdMap;
 }
 
 async function createObs(localObservedProperties, observedPropertiesResponse) {
@@ -416,6 +539,53 @@ function createObservationValue(record, observation, groupId, featureId) {
   return value;
 }
 
+function createObservationValuesWithDatastream(record, observedPropertyName, observationRecords, groupId, datastreamId) {
+
+  const observationvalue = observationRecords[observedPropertyName];
+  if(!observationvalue) {
+    return [];
+  }
+  return observationvalue.values.map(value => createObservationValueWithDatastream(record, value, groupId, datastreamId))
+                                .filter(o => o !== undefined);
+}
+
+function createObservationValueWithDatastream(record, observation, groupId, datastreamId) {
+  const observationtime = record.time_observed_at;
+  if (!observationtime || observationtime.length === 0) {
+    //console.log("Observation time is not available! " + JSON.stringify(record, null, 2));
+    console.log("Observation time is not available! Observation will not be included.");
+    return undefined;
+  }
+
+  const value = {
+    ["@iot.id"] : record.id + "_" + observation.name,
+    phenomenonTime: observationtime,
+    resultTime: observationtime,
+    result: observation.result,
+    resultQuality: observation.quality_grade,
+    parameters: observation.parameters,
+    FeatureOfInterest: {
+      name: "observed location",
+      description: "insitu location where " + observation.name + " observation has been made",
+      encodingType: "application/vnd.geo+json",
+      feature: record.location
+    },
+    CSDatastreams : {
+        "@iot.id": datastreamId
+    },
+    ObservationRelations: [
+      {
+        "@iot.id": "testRelation_" + record.id + "_" + observation.name,
+        "type": "root",
+        "Group": {
+            "@iot.id": groupId
+        }
+      }      
+    ]
+  };
+  return value;
+}
+
 async function createNewObservations(output) {
 
   const observationsByUserLogin = {};
@@ -503,6 +673,14 @@ async function getFeatures(query) {
   return sendGet(staBaseUrl + "/FeaturesOfInterest", query);
 }
 
+async function getCSDataStreams(thingId) {
+  return sendGet(staBaseUrl + "/Things(" + thingId + ")/CSDatastreams", "");
+}
+
+async function getCSDataStreamsObservedProperties(datastreamId) {
+  return sendGet(staBaseUrl + "/CSDatastreams(" + datastreamId + ")/ObservedProperty", "");
+}
+
 async function sendGet(url, query) {
   // if (query) {
   //   console.log("GETting: " + url + " and query " + JSON.stringify(query, null, 2));
@@ -530,7 +708,7 @@ async function postObservedProperty(observedProperty) {
 }
 
 async function postThing(thing) {
-  //console.log(JSON.stringify(thing));
+  console.log(JSON.stringify(thing));
   return sendPost(staBaseUrl + "/Things", thing);
 }
 
@@ -556,6 +734,11 @@ async function postGroup(group) {
 async function postFeature(feature) {
   //console.log(feature);
   return sendPost(staBaseUrl + "/FeaturesOfInterest", feature);
+}
+
+async function postObservation(observation) {
+  //console.log(group);
+  return sendPost(staBaseUrl + "/CSObservations", observation);
 }
 
 async function sendPost(url, payload) {
