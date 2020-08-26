@@ -14,6 +14,19 @@ const emptyUOM = {
   definition: null
 };
 
+const observationTypeTaxon = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation";
+const observationTypePhoto = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation";
+
+const observedPropertyNameTaxon = "taxon";
+const observedPropertyNamePhoto = "photo";
+
+const observedPropertyNameObservationTypeMap = {
+  [observedPropertyNameTaxon] : observationTypeTaxon,
+  [observedPropertyNamePhoto] : observationTypePhoto
+}
+
+const iot_id = "@iot.id";
+
 fs.readFile(filePath, (err, data) => {
   //console.log(err);
   if (err) {
@@ -54,9 +67,9 @@ function loadData(data) {
         };
 
         if(data.taxon_name){
-          record.observation.taxon = {
-            name: "taxon",
-            observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+          record.observation[observedPropertyNameTaxon] = {
+            name: observedPropertyNameTaxon,
+            observationType: observationTypeTaxon,
             parameters : [
               {
                 name: "taxon_name",
@@ -77,9 +90,9 @@ function loadData(data) {
         console.log("Obs photo count: " + data.observation_photos_count);
 
         for (let i = 0 ; i < data.observation_photos_count ; i++) {
-          record.observation["photo_" + i] = {
-            name: "photo_" + i,
-            observationType: "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+          record.observation[observedPropertyNamePhoto + "_" + i] = {
+            name: observedPropertyNamePhoto + "_" + i,
+            observationType: observationTypePhoto,
             parameters : [
               {
                 name: "attribution",
@@ -160,12 +173,12 @@ async function createNewThings(output) {
   // observed property
   const observedPropertiesResponse = (await getObservedProperties()).body;
   const taxonObservedProperty = {
-    name: "taxon",
+    name: observedPropertyNameTaxon,
     description: "The canonical name of the observed species",
     definition: "http://purl.org/biodiversity/taxon/"
   };
   const photoObservedProperty = {
-    name: "photo",
+    name: observedPropertyNamePhoto,
     description: "A photo of the observed species",
     definition: "http://purl.org/net/photo"
   };
@@ -174,52 +187,14 @@ async function createNewThings(output) {
 
   let observedPropertyNameIdMap = await createObs(localObservedProperties, observedPropertiesResponse);
 
-  // const observationsByUserLogin = {};
-
-  // output.forEach(record => {
-  //   const user_login = record.user_login;
-  //   if (!observationsByUserLogin[user_login]) {
-  //     observationsByUserLogin[user_login] = {};
-  //   }
-  //   const userObservations = observationsByUserLogin[user_login];    
-  //   const observation = record.observation;
- 
-  //   Object.keys(observation)
-  //         .forEach(observedPropertyName => {
-
-  //             let photo = false;
-  //             if(observedPropertyName.includes("photo")){
-  //               photo = true;
-  //             }
-
-  //           const observationValue = observation[observedPropertyName];
-
-  //           if(photo){
-  //             observedPropertyName = "photo";
-  //           }
-
-  //           if (!userObservations[observedPropertyName]) {
-  //             userObservations[observedPropertyName] = {
-  //               observationType: observationValue.observationType,
-  //               observedPropertyId: observedPropertyNameIdMap[observedPropertyName],
-  //               values: []
-  //             };
-  //           }
-  //           const records = userObservations[observedPropertyName];
-  //           records.values.push(observationValue);
-  //         });
-  // });
-  console.log("output length " + output.length);
   for (let record of output) {
 
   const things = (await getThings()).body;
-  
+
   const thingNames = things.value.map(thing => thing.name);
-  
+ 
   const newThings = {};
-  //output.forEach(async(record) => {
     if (!newThings[record.id] && !thingNames.includes(record.user_login)) {
-      const user_login = record.user_login;
       const observationRecords = {};
     
       const observation = record.observation;
@@ -228,14 +203,14 @@ async function createNewThings(output) {
             .forEach(observedPropertyName => {
   
                 let photo = false;
-                if(observedPropertyName.includes("photo")){
+                if(observedPropertyName.includes(observedPropertyNamePhoto)){
                   photo = true;
                 }
   
               const observationValue = observation[observedPropertyName];
   
               if(photo){
-                observedPropertyName = "photo";
+                observedPropertyName = observedPropertyNamePhoto;
               }
   
               if (!observationRecords[observedPropertyName]) {
@@ -267,22 +242,13 @@ async function createNewThings(output) {
         await postProject(citSciProject)
       }
       newThings[record.user_id] = await createThing(record, sensorId, projectId, partyId, licenseId, observationRecords, observedPropertyNameIdMap);
-      await postThing(newThings[record.user_id]);
+      let responseThing = (await postThing(newThings[record.user_id])).body;
+      
+      // console.log(responseThing.name);
+      // console.log(responseThing[iot_id]);
     } else {
 
-      console.log("Thing name exists: " + record.user_login);
-      
-      //create group id
-
-      //create observationValues
-
-      //foreach observation get observedProperty
-
-      //get datastream for observedProperty
-
-      //add datastream id and group id to observation
-
-      //post observation
+      console.log("Thing name exists: " + record.user_login + ". Trying to add observations to datastream(s).");
 
       const observationRecords = {};
     
@@ -292,14 +258,14 @@ async function createNewThings(output) {
             .forEach(observedPropertyName => {
   
                 let photo = false;
-                if(observedPropertyName.includes("photo")){
+                if(observedPropertyName.includes(observedPropertyNamePhoto)){
                   photo = true;
                 }
   
               const observationValue = observation[observedPropertyName];
   
               if(photo){
-                observedPropertyName = "photo";
+                observedPropertyName = observedPropertyNamePhoto;
               }
   
               if (!observationRecords[observedPropertyName]) {
@@ -312,9 +278,15 @@ async function createNewThings(output) {
               const records = observationRecords[observedPropertyName];
               records.values.push(observationValue);
       });
-      //get thing
-      const thing = things.value.filter(thing => thing.name = record.user_login)[0];
 
+      //get thing
+      const thing = things.value.filter(thing => thing.name === record.user_login)[0];
+
+      // console.log("record.user_login " + record.user_login);
+      // console.log("thing id " + thing[iot_id]);
+      // console.log("thing name " + thing["name"]);
+
+      //create group id
       let groupId = "group_" + record.id;
 
       try {
@@ -325,20 +297,22 @@ async function createNewThings(output) {
 
       const datastreamObservedPropertyIdMap = await createDatastreamObservedPropertyIdMap(thing);
 
-      Object.keys(observedPropertyNameIdMap).forEach(key => {
-        console.log(datastreamObservedPropertyIdMap[key]);
-      })
+      //create observationValues
 
+      //foreach observation get observedProperty
+
+      //get datastream for observedProperty
+
+      //add datastream id and group id to observation
       const observationValues = Object.keys(observedPropertyNameIdMap)
       .map(observedPropertyName => createObservationValuesWithDatastream(record, observedPropertyName, observationRecords, groupId, datastreamObservedPropertyIdMap[observedPropertyName]))
       .filter(value => value !== undefined);
 
-      debugger;
-
+      //post observation
       for (const observationArray of observationValues) {
         for (const observation of observationArray) {
           try {
-            await postObservation(observation);            
+            await postObservation(observation);
           } catch (error) {
             console.error("Could not post observation to STA. " + JSON.stringify(observation));
             console.error(error);
@@ -347,10 +321,6 @@ async function createNewThings(output) {
       }
     }
   };
-
-  // for (let user_id of Object.keys(newThings)) {
-    
-  // }
 }
 
 async function createDatastreamObservedPropertyIdMap(thing){
@@ -361,7 +331,7 @@ async function createDatastreamObservedPropertyIdMap(thing){
 
   for(let csDatastream of csDatastreams.value){
     const datastreamId = csDatastream["@iot.id"];
-    console.log("DatastreamId: " + datastreamId);
+    // console.log("DatastreamId: " + datastreamId);
     const csDatastreamObservedProperties = (await getCSDataStreamsObservedProperties(datastreamId)).body;
     datastreamObservedPropertyIdMap[csDatastreamObservedProperties.name] = datastreamId;
   }
@@ -371,8 +341,6 @@ async function createDatastreamObservedPropertyIdMap(thing){
 async function createObs(localObservedProperties, observedPropertiesResponse) {
 
   let observedPropertyNameIdMap = {};
-
-   //console.log("createObs executed " + localObservedProperties[0]);
 
   for (let localObservedProperty of localObservedProperties) {    
     const localObservedPropertyName = localObservedProperty.name;
@@ -404,10 +372,16 @@ async function createThing(record, sensorId, projectId, partyId, licenseId, obse
   const featureId = feature ? feature["@iot.id"] : (await postFeature(citSciFeature)).body["@iot.id"];
 
   const user = record.user_login;
-
+  
   const datastreams = Object.keys(observedPropertyNameIdMap)
-                            .map(observedPropertyName => createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, featureId, observedPropertyName, observationRecords))
+                            .map(observedPropertyName => createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, observedPropertyNameIdMap[observedPropertyName], observedPropertyName, observedPropertyNameObservationTypeMap[observedPropertyName], observationRecords))
                             .filter(value => value !== undefined);
+
+
+  //if a datastream was not created due to no observations, 
+  //we will create the datastream for the observed property with empty observation list
+  //this is necessary to add possible observations of the observed property to the thing afterwards
+
   const historicalLocations = [];
   datastreams.forEach(datastream => {
     const observations = datastream.CSObservations;
@@ -452,31 +426,31 @@ async function createObsGroup(recordId){
   return "group_" + recordId;
 }
 
-function createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, featureId, observedPropertyName, observationRecords) {
-  const observationValues = createObservationValues(record, observedPropertyName, observationRecords, groupId, featureId);
+function createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, observedPropertyId, observedPropertyName, observationType, observationRecords) {
+  const observationValues = createObservationValues(record, observedPropertyName, observationRecords, groupId);
 
-  console.log("Observationvalues: " + observationValues);
-  console.log("Record id: " + record.id);
+  //console.log("Observationvalues: " + observationValues);
+  //console.log("Record id: " + record.id);
   
-  if(!observationValues || observationValues.length < 1){
-    console.log("observationValues undefined or empty");
-    return;
-  }
+  // if(!observationValues || observationValues.length < 1){
+  //   console.log("observationValues undefined or empty");
+  //   return;
+  // }
 
-  const observation = observationRecords[observedPropertyName];
+  //const observation = observationRecords[observedPropertyName];
   
-  if(!observation){
-    //undefined datastream will be filtered out
-    return;
-  }
+  // if(!observation){
+  //   //undefined datastream will be filtered out
+  //   return;
+  // }
 
   const user = record.user_login;
   return {
     name: "Datastream of user " + user + " (observing " + observedPropertyName + ")",
     description: "An observation datastream taken from a Citizen Scientist via mobile phone",
-    observationType: observation.observationType,
+    observationType: observationType,
     ObservedProperty: {
-      "@iot.id": observation.observedPropertyId
+      "@iot.id": observedPropertyId
     },
     unitOfMeasurement: emptyUOM,
     Sensor: {
@@ -495,17 +469,17 @@ function createDatastream(record, sensorId, projectId, partyId, licenseId, group
   };
 }
 
-function createObservationValues(record, observedPropertyName, observationRecords, groupId, featureId) {
+function createObservationValues(record, observedPropertyName, observationRecords, groupId) {
 
   const observationvalue = observationRecords[observedPropertyName];
   if(!observationvalue) {
     return [];
   }
-  return observationvalue.values.map(value => createObservationValue(record, value, groupId, featureId))
+  return observationvalue.values.map(value => createObservationValue(record, value, groupId))
                                 .filter(o => o !== undefined);
 }
 
-function createObservationValue(record, observation, groupId, featureId) {
+function createObservationValue(record, observation, groupId) {
   const observationtime = record.time_observed_at;
   if (!observationtime || observationtime.length === 0) {
     //console.log("Observation time is not available! " + JSON.stringify(record, null, 2));
@@ -708,7 +682,7 @@ async function postObservedProperty(observedProperty) {
 }
 
 async function postThing(thing) {
-  console.log(JSON.stringify(thing));
+  // console.log(JSON.stringify(thing));
   return sendPost(staBaseUrl + "/Things", thing);
 }
 
@@ -749,7 +723,14 @@ async function sendPost(url, payload) {
                    .set("accept", "application/json")
                    .catch(error => {
                      const response = error.response;
-                     console.error(JSON.stringify(response, null, 2));
+                     const stringResponse = JSON.stringify(response, null, 2);
+                     console.error(stringResponse);
+                     fs.writeFile("d:/tmp/dataloadingerrors/" + payload.name + ".txt", stringResponse, function (err) {
+                      if (err) {
+                        console.log("Error saving file.");
+                      };
+                      console.log('File saved!');
+                    });
                     });
 }
 
