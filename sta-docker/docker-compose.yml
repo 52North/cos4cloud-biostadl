@@ -30,7 +30,7 @@ services:
     #   restart_policy:
     #     condition: on-failure
   sta:
-    image: 52north/sensorweb-server-sta:2.1.4-CITSCI-SNAPSHOT
+    build: ./sta/sensorweb-server-sta
     networks:
       - backend
     ports:
