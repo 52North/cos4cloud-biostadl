@@ -1,4 +1,4 @@
 [submodule "sta-docker/sta/sensorweb-server-sta"]
     path = sta-docker/sta/sensorweb-server-sta
     url = https://github.com/52North/sensorweb-server-sta
-    branch = feature/citSciExtension
+	branch = feature/citSciExtension-2
