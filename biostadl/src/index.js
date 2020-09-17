@@ -155,7 +155,7 @@ async function createNewThings(output) {
   const citSciParty = {
     nickName: "Demo Party nickName",
     role: "individual",
-    CSDatastreams: []
+    Datastreams: []
   };
   const party = partiesResponse.value.find(party => party.name === "Demo Party nickName");
   const partyId = party ? party["@iot.id"] : (await postParty(citSciParty)).body["@iot.id"];
@@ -165,7 +165,7 @@ async function createNewThings(output) {
   const citSciLicense = {
     name: "MIT License",
     definition: "https://opensource.org/licenses/MIT",
-    CSDatastreams: []
+    Datastreams: []
   };
   const license = licensesResponse.value.find(license => license.name === "Demo License.");
   const licenseId = license ? license["@iot.id"] : (await postLicense(citSciLicense)).body["@iot.id"];
@@ -234,7 +234,7 @@ async function createNewThings(output) {
         name: record.project.title,
         description: "This is a demo project",
         runtime: "2020-06-25T03:42:02-02:00",
-        CSDatastreams: []
+        Datastreams: []
       };
       const project = projectsResponse.value.find(project => project["@iot.id"] === projectId);
       
@@ -325,14 +325,14 @@ async function createNewThings(output) {
 
 async function createDatastreamObservedPropertyIdMap(thing){
   const thingId = thing["@iot.id"];
-  const csDatastreams = (await getCSDataStreams(thingId)).body;
+  const datastreams = (await getDataStreams(thingId)).body;
 
   let datastreamObservedPropertyIdMap = {};
 
-  for(let csDatastream of csDatastreams.value){
+  for(let csDatastream of datastreams.value){
     const datastreamId = csDatastream["@iot.id"];
     // console.log("DatastreamId: " + datastreamId);
-    const csDatastreamObservedProperties = (await getCSDataStreamsObservedProperties(datastreamId)).body;
+    const csDatastreamObservedProperties = (await getDataStreamsObservedProperties(datastreamId)).body;
     datastreamObservedPropertyIdMap[csDatastreamObservedProperties.name] = datastreamId;
   }
   return datastreamObservedPropertyIdMap;
@@ -384,7 +384,7 @@ async function createThing(record, sensorId, projectId, partyId, licenseId, obse
 
   const historicalLocations = [];
   datastreams.forEach(datastream => {
-    const observations = datastream.CSObservations;
+    const observations = datastream.Observations;
     if(Array.isArray(observations)){
     for (let observation of observations) {
       const foi = observation.FeatureOfInterest;
@@ -405,7 +405,7 @@ async function createThing(record, sensorId, projectId, partyId, licenseId, obse
       uri: natusferaBaseUrl + "/users/" + record.user_id,
       id: record.user_id
     },
-    CSDatastreams: datastreams,
+    Datastreams: datastreams,
     HistoricalLocations: historicalLocations
   };
 
@@ -456,7 +456,7 @@ function createDatastream(record, sensorId, projectId, partyId, licenseId, group
     Sensor: {
       "@iot.id": sensorId
     },
-    CSObservations: observationValues,
+    Observations: observationValues,
     License : {
       "@iot.id": licenseId
     },
@@ -544,7 +544,7 @@ function createObservationValueWithDatastream(record, observation, groupId, data
       encodingType: "application/vnd.geo+json",
       feature: record.location
     },
-    CSDatastreams : {
+    Datastream : {
         "@iot.id": datastreamId
     },
     ObservationRelations: [
@@ -647,12 +647,12 @@ async function getFeatures(query) {
   return sendGet(staBaseUrl + "/FeaturesOfInterest", query);
 }
 
-async function getCSDataStreams(thingId) {
-  return sendGet(staBaseUrl + "/Things(" + thingId + ")/CSDatastreams", "");
+async function getDataStreams(thingId) {
+  return sendGet(staBaseUrl + "/Things(" + thingId + ")/Datastreams", "");
 }
 
-async function getCSDataStreamsObservedProperties(datastreamId) {
-  return sendGet(staBaseUrl + "/CSDatastreams(" + datastreamId + ")/ObservedProperty", "");
+async function getDataStreamsObservedProperties(datastreamId) {
+  return sendGet(staBaseUrl + "/Datastreams(" + datastreamId + ")/ObservedProperty", "");
 }
 
 async function sendGet(url, query) {
@@ -712,7 +712,7 @@ async function postFeature(feature) {
 
 async function postObservation(observation) {
   //console.log(group);
-  return sendPost(staBaseUrl + "/CSObservations", observation);
+  return sendPost(staBaseUrl + "/Observations", observation);
 }
 
 async function sendPost(url, payload) {
