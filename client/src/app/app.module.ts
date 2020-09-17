@@ -33,7 +33,8 @@ import { AuthGuard } from './services/auth.guard';
       {
         resourceServer: {
           sendAccessToken: true,
-          allowedUrls: ['https://cos4cloud.demo.52north.org/sta/']
+          // allowedUrls: ['https://cos4cloud.demo.52north.org/sta/']
+          allowedUrls: ['https://localhost/sta/']
         }
       }
     ),

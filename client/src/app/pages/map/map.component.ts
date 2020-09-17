@@ -44,7 +44,7 @@ export class MapComponent implements OnInit {
 
     console.log(this.authSrvc.accessToken);
 
-    this.sta.getLocations('https://cos4cloud.demo.52north.org/sta/').subscribe(res => {
+    this.sta.getLocations('https://localhost/sta/').subscribe(res => {
       debugger;
     });
 

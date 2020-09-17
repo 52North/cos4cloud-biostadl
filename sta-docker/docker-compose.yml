@@ -30,7 +30,7 @@ services:
     #   restart_policy:
     #     condition: on-failure
   sta:
-    build: ./sta/sensorweb-server-sta
+    build: ./sta
     networks:
       - backend
     ports:

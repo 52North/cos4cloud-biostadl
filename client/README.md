@@ -6,6 +6,23 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
+## OpenId connect configuration
+
+Create the file `src/app/auth.config.ts` and provide authentification the configuration to enable login via OpenId connect. The config has to look
+like the following:
+
+```js
+export const authConfig: AuthConfig = {
+  issuer: 'https://www.authenix.eu',
+  redirectUri: '<the exact redirect URI>',
+  clientId: '<the registered client id>',
+  responseType: '<the token type, e.g. id_token token>',
+  showDebugInformation: true,
+  sessionChecksEnabled: true,
+  scope: 'openid profile'
+};
+```
+
 ## Code scaffolding
 
 Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.

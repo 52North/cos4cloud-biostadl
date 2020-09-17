@@ -1,13 +1,12 @@
 const fs = require('fs');
 const superagent = require("superagent");
-const parse = require('csv-parse');
-
+const parseCSV = require('csv-parse');
 
 
 // CONSTANTS
 const filePath = "./RitmeNatura_odc_exerpt_2.csv";
 const natusferaBaseUrl = "https://natusfera.gbif.es";
-const staBaseUrl = "http://localhost:8081/sta";
+const staBaseUrl = "http://localhost:8080/sta";
 const emptyUOM = {
   name: null,
   symbol: null,
@@ -28,7 +27,6 @@ const observedPropertyNameObservationTypeMap = {
 const iot_id = "@iot.id";
 
 fs.readFile(filePath, (err, data) => {
-  //console.log(err);
   if (err) {
     superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
             .set("user-agent", "some-agent")
@@ -45,90 +43,65 @@ fs.readFile(filePath, (err, data) => {
 
 function loadData(data) {
   try {
-    const output = [];
-    parse(data, {
+    parseCSV(data, {
       columns: true,
       delimiter: ";",
       trim: true
-    }, function(err, data) {
-      data.forEach(data => {
-        const record = {
-          id: data.id,
-          uri: data.uri,
-          user_id: data.user_id,
-          user_login: data.user_login,
-          observation: { },
-          time_observed_at: data.time_observed_at,
-          location: createPoint(data),
-          project: {
-            id: data.project_id_0,
-            title: data.project_title_0
-          }
-        };
-
-        if(data.taxon_name){
-          record.observation[observedPropertyNameTaxon] = {
-            name: observedPropertyNameTaxon,
-            observationType: observationTypeTaxon,
-            parameters : [
-              {
-                name: "taxon_name",
-                value: data.taxon_name
-              },
-              {
-                name: "fenofase",
-                value: data.Fenofase
-              }
-            ],
-            result: data.species_guess,
-            quality_grade : data.quality_grade
-          }
-        }else {
-           console.log("No taxon name: " + record.id);
-        }
-
-        console.log("Obs photo count: " + data.observation_photos_count);
-
-        for (let i = 0 ; i < data.observation_photos_count ; i++) {
-          record.observation[observedPropertyNamePhoto + "_" + i] = {
-            name: observedPropertyNamePhoto + "_" + i,
-            observationType: observationTypePhoto,
-            parameters : [
-              {
-                name: "attribution",
-                value: data["photo_attribution_" + i]
-              }
-            ],
-            result: data["photo_large_url_" + i],
-            quality_grade : data.quality_grade
-          }
-        }
-
-        if (record.user_id && record.location) {
-          output.push(record);
-        }else {
-          console.log("record not added: " + record.id);
-          !record.user_id ? console.log("reason: user id undefined") : console.log("reason: location undefined");
-        }
-      });
-
-    }).on("end", async () => {
-      createNewThings(output).catch(error => {
-                               console.error(error)
-                              });
-    });
+    }, loadObservations);
   } catch (error) {
     console.error(error);
   }
+}
+
+function loadObservations(err, data) {
+  if (err) {
+    throw new Error(`reading csv failed: ${err}`);
+  }
+
+  const output = [];
+  data.forEach(row => {
+    if (!row.user_id) {
+      console.log("reason: user id undefined");
+      return;
+    }
+
+    const record = {};
+    const location = record.location = createPoint(row);
+    if (!location) {
+      console.log("reason: location undefined");
+      return;
+    }
+
+    parseObservationMetadata(row, record);
+    parseTaxonObservation(row, record);
+    parsePhotoObservations(row, record);
+    output.push(record);
+
+  });//.on("end", async () => {
+    
+  createNewThings(output).catch(error => console.error(error));
+  //}
+}
+
+function parseObservationMetadata(row, record) {
+  return Object.assign(record, {
+    id: row.id,
+    uri: row.uri,
+    user_id: row.user_id,
+    user_login: row.user_login,
+    observation: {},
+    time_observed_at: row.time_observed_at,
+    project: {
+      id: row.project_id_0,
+      title: row.project_title_0
+    }
+  });
 }
 
 function createPoint(data) {
   let lon = parseFloat(data.longitude);
   let lat = parseFloat(data.latitude);
   if (isNaN(lon) || isNaN(lat)) {
-    //console.warn("invalid location data (lon: " + data.longitude + ", lat: " + data.latitude + ")");
-    lon = 0;
-    lat = 0;
     return undefined;
   }
   return {
@@ -137,7 +110,48 @@ function createPoint(data) {
   }
 }
 
-async function createNewThings(output) {
+function parseTaxonObservation(row, record) {
+  if (!row.taxon_name) {
+    console.log("No taxon name: " + record.id);
+  } else {
+    record.observation[observedPropertyNameTaxon] = {
+      name: observedPropertyNameTaxon,
+      observationType: observationTypeTaxon,
+      parameters: [
+        {
+          name: "taxon_name",
+          value: row.taxon_name
+        },
+        {
+          name: "fenofase",
+          value: row.Fenofase
+        }
+      ],
+      result: row.species_guess,
+      quality_grade: row.quality_grade
+    };
+  }
+}
+
+function parsePhotoObservations(row, record) {
+  console.log("Obs photo count: " + row.observation_photos_count);
+  for (let i = 0; i < row.observation_photos_count; i++) {
+    record.observation[observedPropertyNamePhoto + "_" + i] = {
+      name: observedPropertyNamePhoto + "_" + i,
+      observationType: observationTypePhoto,
+      parameters: [
+        {
+          name: "attribution",
+          value: row["photo_attribution_" + i]
+        }
+      ],
+      result: row["photo_large_url_" + i],
+      quality_grade: row.quality_grade
+    };
+  }
+}
+
+async function createNewThings(records) {
 
   //sensor
   const sensorsResponse = (await getSensors()).body;
@@ -187,7 +201,7 @@ async function createNewThings(output) {
 
   let observedPropertyNameIdMap = await createObs(localObservedProperties, observedPropertiesResponse);
 
-  for (let record of output) {
+  for (let record of records) {
 
   const things = (await getThings()).body;
 
@@ -726,11 +740,11 @@ async function sendPost(url, payload) {
                      const stringResponse = JSON.stringify(response, null, 2);
                      console.error(stringResponse);
                      fs.writeFile("d:/tmp/dataloadingerrors/" + payload.name + ".txt", stringResponse, function (err) {
-                      if (err) {
-                        console.log("Error saving file.");
-                      };
-                      console.log('File saved!');
-                    });
+                       if (err) {
+                         console.log("Error saving file.");
+                        };
+                        console.log('File saved!');
+                      });
                     });
 }
 

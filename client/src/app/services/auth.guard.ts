@@ -12,6 +12,7 @@ export class AuthGuard implements CanActivate {
     ) { }
 
     canActivate() {
+        // tslint:disable-next-line:no-debugger
         debugger;
         if (
             this.authSrvc.accessToken
