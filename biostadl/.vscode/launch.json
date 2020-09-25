@@ -8,9 +8,17 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "skipFiles": [
+            "sourceMaps": true,
+            "smartStep": true,
+            "trace": "all",
+            "program": "${workspaceFolder}/src/index.ts",
+            "runtimeArgs": [
+                "--unhandled-rejections=strict"
             ],
-            "program": "${workspaceFolder}/biostadl/src/index.js"
+            // "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ]
         }
     ]
 }

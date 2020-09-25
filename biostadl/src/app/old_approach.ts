@@ -1,75 +1,35 @@
-const fs = require('fs');
-const superagent = require("superagent");
-const parseCSV = require('csv-parse');
+import STA from "../sta/sta_service";
+import { staBaseUrl } from "../config/Config";
+import { EMPTY_UOM, NATUSFERA_BASE_URL } from "../config/Constants";
+import { PHOTO_DEFINITION, TAXON_DEFINITION } from "../sta/citSciTypes";
 
-
-// CONSTANTS
-const filePath = "./RitmeNatura_odc_exerpt_2.csv";
-const natusferaBaseUrl = "https://natusfera.gbif.es";
-const staBaseUrl = "http://localhost:8080/sta";
-const emptyUOM = {
-  name: null,
-  symbol: null,
-  definition: null
-};
-
-const observationTypeTaxon = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation";
-const observationTypePhoto = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation";
 
 const observedPropertyNameTaxon = "taxon";
 const observedPropertyNamePhoto = "photo";
 
-const observedPropertyNameObservationTypeMap = {
-  [observedPropertyNameTaxon] : observationTypeTaxon,
-  [observedPropertyNamePhoto] : observationTypePhoto
+const observedPropertyNameObservationTypeMap: any = {
+  [observedPropertyNameTaxon]: TAXON_DEFINITION,
+  [observedPropertyNamePhoto]: TAXON_DEFINITION
 }
 
-const iot_id = "@iot.id";
-
-fs.readFile(filePath, (err, data) => {
+const sta = new STA(staBaseUrl);
+export default function load(err: any, data: any) {
   if (err) {
-    superagent.get("https://external.opengeospatial.org/twiki_public/pub/CitSciIE/OpenDataChallenge/RitmeNatura_odc.csv")
-            .set("user-agent", "some-agent")
-            .set("accept", "*/*; charset=utf-8")
-            .end((err, res) => fs.writeFile(filePath, res.text, (err) => {
-              if (err) throw err;
-              const data = fs.readFileSync(filePath);
-              loadData(data);
-            }))
-  } else {
-    loadData(data);
-  }
-});
-
-function loadData(data) {
-  try {
-    parseCSV(data, {
-      columns: true,
-      delimiter: ";",
-      trim: true
-    }, loadObservations);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-function loadObservations(err, data) {
-  if (err) {
-    throw new Error(`reading csv failed: ${err}`);
+    throw new Error(`loading data failed: ${err}`);
   }
 
-  const output = [];
-  data.forEach(row => {
+  const output: any[] = [];
+  for (const row of data) {
     if (!row.user_id) {
       console.debug("reason: user id undefined");
-      return;
+      continue;
     }
 
-    const record = {};
+    const record: any = {};
     const location = record.location = createPoint(row);
     if (!location) {
       console.debug("reason: location undefined");
-      return;
+      continue;
     }
 
     parseObservationMetadata(row, record);
@@ -77,12 +37,12 @@ function loadObservations(err, data) {
     parsePhotoObservations(row, record);
     output.push(record);
 
-  });
+  };
 
   createNewThings(output).catch(error => console.error(error));
 }
 
-function parseObservationMetadata(row, record) {
+function parseObservationMetadata(row: any, record: any) {
   return Object.assign(record, {
     id: row.id,
     uri: row.uri,
@@ -97,7 +57,7 @@ function parseObservationMetadata(row, record) {
   });
 }
 
-function createPoint(data) {
+function createPoint(data: any): any {
   let lon = parseFloat(data.longitude);
   let lat = parseFloat(data.latitude);
   if (isNaN(lon) || isNaN(lat)) {
@@ -109,13 +69,13 @@ function createPoint(data) {
   }
 }
 
-function parseTaxonObservation(row, record) {
+function parseTaxonObservation(row: any, record: any) {
   if (!row.taxon_name) {
     console.debug("No taxon name: " + record.id);
   } else {
     record.observation[observedPropertyNameTaxon] = {
       name: observedPropertyNameTaxon,
-      observationType: observationTypeTaxon,
+      observationType: TAXON_DEFINITION,
       parameters: [
         {
           name: "taxon_name",
@@ -132,12 +92,12 @@ function parseTaxonObservation(row, record) {
   }
 }
 
-function parsePhotoObservations(row, record) {
+function parsePhotoObservations(row: any, record: any) {
   // console.debug("Obs photo count: " + row.observation_photos_count);
   for (let i = 0; i < row.observation_photos_count; i++) {
     record.observation[observedPropertyNamePhoto + "_" + i] = {
       name: observedPropertyNamePhoto + "_" + i,
-      observationType: observationTypePhoto,
+      observationType: PHOTO_DEFINITION,
       parameters: [
         {
           name: "attribution",
@@ -150,41 +110,41 @@ function parsePhotoObservations(row, record) {
   }
 }
 
-async function createNewThings(records) {
+async function createNewThings(records: any) {
 
   //sensor
-  const sensorsResponse = (await getSensors()).body;
+  const sensorsResponse = (await sta.getSensors()).body;
   const citSciSensor = {
     name: "Citizen Scientist",
     description: "Person sharing individual observations to the public for scientific use",
     encodingType: "application/pdf",
     metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
   };
-  const sensor = sensorsResponse.value.find(sensor => sensor.name === "Citizen Scientist");
-  const sensorId = sensor ? sensor["@iot.id"] : (await postSensor(citSciSensor)).body["@iot.id"];  
+  const sensor = sensorsResponse.value.find((sensor: any) => sensor.name === "Citizen Scientist");
+  const sensorId = sensor ? sensor["@iot.id"] : (await sta.postSensor(citSciSensor)).body["@iot.id"];
 
   //party
-  const partiesResponse = (await getParties()).body;
+  const partiesResponse = (await sta.getParties()).body;
   const citSciParty = {
     nickName: "Demo Party nickName",
     role: "individual",
     Datastreams: []
   };
-  const party = partiesResponse.value.find(party => party.name === "Demo Party nickName");
-  const partyId = party ? party["@iot.id"] : (await postParty(citSciParty)).body["@iot.id"];
-  
+  const party = partiesResponse.value.find((party: any) => party.name === "Demo Party nickName");
+  const partyId = party ? party["@iot.id"] : (await sta.postParty(citSciParty)).body["@iot.id"];
+
   //license
-  const licensesResponse = (await getLicenses()).body;
+  const licensesResponse = (await sta.getLicenses()).body;
   const citSciLicense = {
     name: "MIT License",
     definition: "https://opensource.org/licenses/MIT",
     Datastreams: []
   };
-  const license = licensesResponse.value.find(license => license.name === "Demo License.");
-  const licenseId = license ? license["@iot.id"] : (await postLicense(citSciLicense)).body["@iot.id"];
+  const license = licensesResponse.value.find((license: any) => license.name === "Demo License.");
+  const licenseId = license ? license["@iot.id"] : (await sta.postLicense(citSciLicense)).body["@iot.id"];
 
   // observed property
-  const observedPropertiesResponse = (await getObservedProperties()).body;
+  const observedPropertiesResponse = (await sta.getObservedProperties()).body;
   const taxonObservedProperty = {
     name: observedPropertyNameTaxon,
     description: "The canonical name of the observed species",
@@ -202,33 +162,33 @@ async function createNewThings(records) {
 
   for (let record of records) {
 
-    const things = (await getThings()).body;
+    const things = (await sta.getThings()).body;
 
-    const thingNames = things.value.map(thing => thing.name);
+    const thingNames = things.value.map((thing: any) => thing.name);
 
     // TODO return composite observations?
     const observationRecords = createObservationRecords(record, observedPropertyNameIdMap);
 
     let groupId = "group_" + record.id;
-      try {
-        //create top level group
-          groupId = await createObsGroup(record.id);
-      } catch (error) {
-        if (error.status === 409) {
-          console.debug(`Duplicated groupId: ${record.id}`);
-        } else {
-          console.error(error);
-        }
+    try {
+      //create top level group
+      groupId = await createObsGroup(record.id);
+    } catch (error) {
+      if (error.status === 409) {
+        console.debug(`Duplicated groupId: ${record.id}`);
+      } else {
+        console.error(error);
       }
+    }
 
     let thing = undefined;
     if (!thingNames.includes(record.user_login)) {
 
       //project
-      const projectsResponse = (await getProjects()).body;
-      
+      const projectsResponse = (await sta.getProjects()).body;
+
       const projectId = "project_" + record.project.id;
-      
+
       const citSciProject = {
         "@iot.id": projectId,
         name: record.project.title,
@@ -236,19 +196,24 @@ async function createNewThings(records) {
         runtime: "2020-06-25T03:42:02-02:00",
         Datastreams: []
       };
-      const project = projectsResponse.value.find(project => project["@iot.id"] === projectId);
-      
-      if(!project){
-        await postProject(citSciProject)
+      const project = projectsResponse.value.find((project: any) => project["@iot.id"] === projectId);
+
+      if (!project) {
+        await sta.postProject(citSciProject);
       }
       const newThing = await createThing(record, sensorId, projectId, partyId, licenseId, observationRecords, observedPropertyNameIdMap);
-      thing = (await postThing(newThing)).body;
-      
+      try {
+        thing = (await sta.postThing(newThing)).body;
+      } catch (error) {
+        console.error(`could not post thing: ${thing}`);
+        continue;
+      }
+
       // console.debug(responseThing.name);
       // console.debug(responseThing[iot_id]);
     } else {
       console.debug("Thing name exists: " + record.user_login + ". Trying to add observations to datastream(s).");
-      thing = things.value.filter(thing => thing.name === record.user_login)[0];
+      thing = things.value.filter((thing: any) => thing.name === record.user_login)[0];
     }
 
     // console.debug("record.user_login " + record.user_login);
@@ -266,14 +231,14 @@ async function createNewThings(records) {
 
     //add datastream id and group id to observation
     const observationValues = Object.keys(observedPropertyNameIdMap)
-    .map(observedPropertyName => createObservationValuesWithDatastream(record, observedPropertyName, observationRecords, groupId, datastreamObservedPropertyIdMap[observedPropertyName]))
-    .filter(value => value !== undefined);
+      .map(observedPropertyName => createObservationValuesWithDatastream(record, observedPropertyName, observationRecords, groupId, datastreamObservedPropertyIdMap[observedPropertyName]))
+      .filter(value => value !== undefined);
 
     //post observation
     for (const observationArray of observationValues) {
       for (const observation of observationArray) {
         try {
-          await postObservation(observation);
+          await sta.postObservation(observation);
         } catch (error) {
           if (error.response.status !== 409) {
             console.error("Could not post observation to STA. " + JSON.stringify(observation));
@@ -287,9 +252,9 @@ async function createNewThings(records) {
   };
 }
 
-function createObservationRecords(record, observedPropertyNameIdMap) {
+function createObservationRecords(record: any, observedPropertyNameIdMap: any) {
 
-  const observationRecords = {};
+  const observationRecords: any = {};
 
   const observation = record.observation;
 
@@ -321,78 +286,79 @@ function createObservationRecords(record, observedPropertyNameIdMap) {
   return observationRecords;
 }
 
-async function createDatastreamObservedPropertyIdMap(thing){
+async function createDatastreamObservedPropertyIdMap(thing: any) {
   const thingId = thing["@iot.id"];
-  const datastreams = (await getDataStreams(thingId)).body;
+  const datastreams = (await sta.getDataStreams(thingId)).body;
 
-  let datastreamObservedPropertyIdMap = {};
+  let datastreamObservedPropertyIdMap: any = {};
 
-  for(let csDatastream of datastreams.value){
+  for (let csDatastream of datastreams.value) {
     const datastreamId = csDatastream["@iot.id"];
     // console.debug("DatastreamId: " + datastreamId);
-    const csDatastreamObservedProperties = (await getDataStreamsObservedProperties(datastreamId)).body;
+    const csDatastreamObservedProperties = (await sta.getDataStreamsObservedProperties(datastreamId)).body;
     datastreamObservedPropertyIdMap[csDatastreamObservedProperties.name] = datastreamId;
   }
   return datastreamObservedPropertyIdMap;
 }
 
-async function createObs(localObservedProperties, observedPropertiesResponse) {
+async function createObs(localObservedProperties: any, observedPropertiesResponse: any) {
 
-  let observedPropertyNameIdMap = {};
+  let observedPropertyNameIdMap: any = {};
 
-  for (let localObservedProperty of localObservedProperties) {    
+  for (let localObservedProperty of localObservedProperties) {
     const localObservedPropertyName = localObservedProperty.name;
-    const observedProperty = observedPropertiesResponse.value.find(observedProperty => observedProperty.name === localObservedPropertyName);
-    const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await postObservedProperty(localObservedProperty)).body["@iot.id"];
+    const observedProperty = observedPropertiesResponse.value.find((observedProperty: any) => observedProperty.name === localObservedPropertyName);
+    const observedPropertyId = observedProperty ? observedProperty["@iot.id"] : (await sta.postObservedProperty(localObservedProperty)).body["@iot.id"];
     observedPropertyNameIdMap[localObservedPropertyName] = observedPropertyId;
   }
   return observedPropertyNameIdMap;
 }
 
-async function createThing(record, sensorId, projectId, partyId, licenseId, observationRecords, observedPropertyNameIdMap) {
-  
+async function createThing(record: any, sensorId: string, projectId: string, partyId: string, licenseId: string, observationRecords: any[], observedPropertyNameIdMap: any) {
+
   let groupId = "group_" + record.id;
 
   try {
-      groupId = await createObsGroup(record.id);
+    groupId = await createObsGroup(record.id);
   } catch (error) {
-      console.error(error);
+    console.error(error);
   }
-  const featuresResponse = (await getFeatures()).body;
-    //feature of interest
+
+  const featuresResponse = (await sta.getFeatures()).body;
+  //feature of interest
   const citSciFeature = {
     name: "observed location",
     description: "insitu location where " + record.id + " observation has been made",
     encodingType: "application/vnd.geo+json",
-    feature: record.location  
+    feature: record.location
   };
-  const feature = featuresResponse.value.find(feature => feature.name === "Demo Feature.");
-  const featureId = feature ? feature["@iot.id"] : (await postFeature(citSciFeature)).body["@iot.id"];
+  const feature = featuresResponse.value.find((feature: any) => feature.name === "Demo Feature.");
+  const featureId = feature ? feature["@iot.id"] : (await sta.postFeature(citSciFeature)).body["@iot.id"];
 
   const user = record.user_login;
-  
+
   const datastreams = Object.keys(observedPropertyNameIdMap)
-                            .map(observedPropertyName => createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, observedPropertyNameIdMap[observedPropertyName], observedPropertyName, observedPropertyNameObservationTypeMap[observedPropertyName], observationRecords))
-                            .filter(value => value !== undefined);
+    .map(observedPropertyName => createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, observedPropertyNameIdMap[observedPropertyName], observedPropertyName, observedPropertyNameObservationTypeMap[observedPropertyName], observationRecords))
+    .filter(value => value !== undefined);
 
 
   //if a datastream was not created due to no observations, 
   //we will create the datastream for the observed property with empty observation list
   //this is necessary to add possible observations of the observed property to the thing afterwards
 
-  const historicalLocations = [];
+  const historicalLocations: any[] = [];
   datastreams.forEach(datastream => {
     const observations = datastream.Observations;
-    if(Array.isArray(observations)){
-    for (let observation of observations) {
-      const foi = observation.FeatureOfInterest;
-      const location = createLocation(foi.feature);
-      const time = observation.phenomenonTime;
-      historicalLocations.push({
-        time,
-        Locations: [location]
-      })
-    }
+    if (Array.isArray(observations)) {
+      for (let observation of observations) {
+        const foi = observation.FeatureOfInterest;
+        const location = createLocation(foi.feature);
+        const time = observation.phenomenonTime;
+        historicalLocations.push({
+          time,
+          Locations: [location]
+        })
+      }
     }
   })
   // const historicalLocations = createHistoricalLocations(re)
@@ -400,7 +366,7 @@ async function createThing(record, sensorId, projectId, partyId, licenseId, obse
     name: user,
     description: "Citizen Scientist",
     properties: {
-      uri: natusferaBaseUrl + "/users/" + record.user_id,
+      uri: NATUSFERA_BASE_URL + "/users/" + record.user_id,
       id: record.user_id
     },
     Datastreams: datastreams,
@@ -410,42 +376,42 @@ async function createThing(record, sensorId, projectId, partyId, licenseId, obse
   return thing;
 }
 
-async function createObsGroup(recordId){
+async function createObsGroup(recordId: string) {
   // group
-  const groupsResponse = (await getGroups()).body;
+  const groupsResponse = (await sta.getGroups()).body;
   const citSciGroup = {
     "@iot.id": "group_" + recordId,
-    name: "Observation group " + recordId,
-    description: "Observation belonging to group " + recordId,
+    name: "Observation composition " + recordId,
+    description: "Composite group of a citizen science observation",
     properties: {
       type: "topLevel"
     },
     relations: []
   };
-  const group = groupsResponse.value.find(group => group.name === "Observation group " + recordId);
-  const groupId = group ? group["@iot.id"] : (await postGroup(citSciGroup)).body["@iot.id"];
+  const group = groupsResponse.value.find((group: any) => group.name === "Observation group " + recordId);
+  const groupId = group ? group["@iot.id"] : (await sta.postGroup(citSciGroup)).body["@iot.id"];
   return "group_" + recordId;
 }
 
-function createDatastream(record, sensorId, projectId, partyId, licenseId, groupId, observedPropertyId, observedPropertyName, observationType, observationRecords) {
+function createDatastream(record: any, sensorId: string, projectId: string, partyId: string, licenseId: string, groupId: string, observedPropertyId: string, observedPropertyName: string, observationType: string, observationRecords: any[]) {
   const observationValues = createObservationValues(record, observedPropertyName, observationRecords, groupId);
 
   //console.debug("Observationvalues: " + observationValues);
   //console.debug("Record id: " + record.id);
-  
+
   // if(!observationValues || observationValues.length < 1){
   //   console.debug("observationValues undefined or empty");
   //   return;
   // }
 
   //const observation = observationRecords[observedPropertyName];
-  
+
   // if(!observation){
   //   //undefined datastream will be filtered out
   //   return;
   // }
 
-  const user = record.user_login;
+  const user: string = record.user_login;
   return {
     name: "Datastream of user " + user + " (observing " + observedPropertyName + ")",
     description: "An observation datastream taken from a Citizen Scientist via mobile phone",
@@ -453,12 +419,12 @@ function createDatastream(record, sensorId, projectId, partyId, licenseId, group
     ObservedProperty: {
       "@iot.id": observedPropertyId
     },
-    unitOfMeasurement: emptyUOM,
+    unitOfMeasurement: EMPTY_UOM,
     Sensor: {
       "@iot.id": sensorId
     },
     Observations: observationValues,
-    License : {
+    License: {
       "@iot.id": licenseId
     },
     Party: {
@@ -470,17 +436,17 @@ function createDatastream(record, sensorId, projectId, partyId, licenseId, group
   };
 }
 
-function createObservationValues(record, observedPropertyName, observationRecords, groupId) {
+function createObservationValues(record: any, observedPropertyName: string, observationRecords: any, groupId: string) {
 
   const observationvalue = observationRecords[observedPropertyName];
-  if(!observationvalue) {
+  if (!observationvalue) {
     return [];
   }
-  return observationvalue.values.map(value => createObservationValue(record, value, groupId))
-                                .filter(o => o !== undefined);
+  return observationvalue.values.map((value: any) => createObservationValue(record, value, groupId))
+    .filter((o: any) => o !== undefined);
 }
 
-function createObservationValue(record, observation, groupId) {
+function createObservationValue(record: any, observation: any, groupId: string) {
   const observationtime = record.time_observed_at;
   if (!observationtime || observationtime.length === 0) {
     //console.debug("Observation time is not available! " + JSON.stringify(record, null, 2));
@@ -489,7 +455,7 @@ function createObservationValue(record, observation, groupId) {
   }
 
   const value = {
-    ["@iot.id"] : record.id + "_" + observation.name,
+    ["@iot.id"]: record.id + "_" + observation.name,
     phenomenonTime: observationtime,
     resultTime: observationtime,
     result: observation.result,
@@ -506,25 +472,25 @@ function createObservationValue(record, observation, groupId) {
         "@iot.id": "testRelation_" + record.id + "_" + observation.name,
         "type": "root",
         "Group": {
-            "@iot.id": groupId
+          "@iot.id": groupId
         }
-      }      
+      }
     ]
   };
   return value;
 }
 
-function createObservationValuesWithDatastream(record, observedPropertyName, observationRecords, groupId, datastreamId) {
+function createObservationValuesWithDatastream(record: any, observedPropertyName: string, observationRecords: any, groupId: string, datastreamId: string) {
 
   const observationvalue = observationRecords[observedPropertyName];
-  if(!observationvalue) {
+  if (!observationvalue) {
     return [];
   }
-  return observationvalue.values.map(value => createObservationValueWithDatastream(record, value, groupId, datastreamId))
-                                .filter(o => o !== undefined);
+  return observationvalue.values.map((value: any) => createObservationValueWithDatastream(record, value, groupId, datastreamId))
+    .filter((o: any) => o !== undefined);
 }
 
-function createObservationValueWithDatastream(record, observation, groupId, datastreamId) {
+function createObservationValueWithDatastream(record: any, observation: any, groupId: string, datastreamId: string) {
   const observationtime = record.time_observed_at;
   if (!observationtime || observationtime.length === 0) {
     //console.debug("Observation time is not available! " + JSON.stringify(record, null, 2));
@@ -533,7 +499,7 @@ function createObservationValueWithDatastream(record, observation, groupId, data
   }
 
   const value = {
-    ["@iot.id"] : record.id + "_" + observation.name,
+    ["@iot.id"]: record.id + "_" + observation.name,
     phenomenonTime: observationtime,
     resultTime: observationtime,
     result: observation.result,
@@ -545,62 +511,62 @@ function createObservationValueWithDatastream(record, observation, groupId, data
       encodingType: "application/vnd.geo+json",
       feature: record.location
     },
-    Datastream : {
-        "@iot.id": datastreamId
+    Datastream: {
+      "@iot.id": datastreamId
     },
     ObservationRelations: [
       {
         "@iot.id": "testRelation_" + record.id + "_" + observation.name,
         "type": "root",
         "Group": {
-            "@iot.id": groupId
+          "@iot.id": groupId
         }
-      }      
+      }
     ]
   };
   return value;
 }
 
-async function createNewObservations(output) {
+// async function createNewObservations(output: any[]) {
 
-  const observationsByUserLogin = {};
-  output.forEach(record => {
-    if (!observationsByUserLogin[record.user_login]) {
-      observationsByUserLogin[record.user_login] = [];
-    }
-    const observations = observationsByUserLogin[record.user_login];
-    try {
-      observations.push(createObservation(record));
-    } catch(err) {
-      console.error(err);
-    }
-  });
+//   const observationsByUserLogin: any = {};
+//   output.forEach(record => {
+//     if (!observationsByUserLogin[record.user_login]) {
+//       observationsByUserLogin[record.user_login] = [];
+//     }
+//     const observations = observationsByUserLogin[record.user_login];
+//     try {
+//       observations.push(createObservation(record));
+//     } catch (err) {
+//       console.error(err);
+//     }
+//   });
 
-  Object.keys(observationsByUserLogin)
-        .forEach(async user_login => {
-          const query = {
-            "$select": "id,Thing",
-            "$filter": "ObservedProperty/name eq 'Taxon' and Thing/name eq '" + user_login + "'"
-            //"$expand": "Thing($select=name)" // matches user_login
-          };
-          const datastreamsResponse = (await getDataStreams(query)).body;
-          const taxonDatastream = datastreamsResponse.value[0] || undefined;
-          if (taxonDatastream) {
-            const datastreamId = taxonDatastream["@iot.id"];
-            const observations = observationsByUserLogin[user_login];
-            observations.forEach(async observation => {
-              observation.Datastream = {
-                "@iot.id": datastreamId
-              }
-              sendPost(staBaseUrl + "/Observations", observation);
-            })
-          } else {
-            console.warn("no proper datastream found for user '" + user_login + "' and ObservedProperty 'Taxon'");
-          }
-        });
-  }
+//   Object.keys(observationsByUserLogin)
+//     .forEach(async user_login => {
+//       const query = {
+//         "$select": "id,Thing",
+//         "$filter": "ObservedProperty/name eq 'Taxon' and Thing/name eq '" + user_login + "'"
+//         //"$expand": "Thing($select=name)" // matches user_login
+//       };
+//       const datastreamsResponse = (await sta.getDataStreams(query)).body;
+//       const taxonDatastream = datastreamsResponse.value[0] || undefined;
+//       if (taxonDatastream) {
+//         const datastreamId = taxonDatastream["@iot.id"];
+//         const observations = observationsByUserLogin[user_login];
+//         observations.forEach(async (observation: any) => {
+//           observation.Datastream = {
+//             "@iot.id": datastreamId
+//           }
+//           sta.sendPost(staBaseUrl + "/Observations", observation);
+//         })
+//       } else {
+//         console.warn("no proper datastream found for user '" + user_login + "' and ObservedProperty 'Taxon'");
+//       }
+//     });
+// }
 
-function createLocation(geometry) {
+function createLocation(geometry: any) {
   return {
     name: "observed location",
     description: "The location where the observation has been made (insitu for now)",
@@ -611,129 +577,6 @@ function createLocation(geometry) {
 
 // REQUEST METHODS
 
-
-async function getThings(query) {
-  return sendGet(staBaseUrl + "/Things", query);
-}
-
-async function getSensors(query) {
-  return sendGet(staBaseUrl + "/Sensors", query);
-}
-
-async function getObservedProperties(query) {
-  return sendGet(staBaseUrl + "/ObservedProperties", query);
-}
-
-async function getDataStreams(query) {
-  return sendGet(staBaseUrl + "/Datastreams", query);
-}
-
-async function getProjects(query) {
-  return sendGet(staBaseUrl + "/Projects", query);
-}
-
-async function getParties(query) {
-  return sendGet(staBaseUrl + "/Parties", query);
-}
-
-async function getLicenses(query) {
-  return sendGet(staBaseUrl + "/Licenses", query);
-}
-
-async function getGroups(query) {
-  return sendGet(staBaseUrl + "/ObservationGroups", query);
-}
-
-async function getFeatures(query) {
-  return sendGet(staBaseUrl + "/FeaturesOfInterest", query);
-}
-
-async function getDataStreams(thingId) {
-  return sendGet(staBaseUrl + "/Things(" + thingId + ")/Datastreams", "");
-}
-
-async function getDataStreamsObservedProperties(datastreamId) {
-  return sendGet(staBaseUrl + "/Datastreams(" + datastreamId + ")/ObservedProperty", "");
-}
-
-async function sendGet(url, query) {
-  // if (query) {
-  //   console.debug("GETting: " + url + " and query " + JSON.stringify(query, null, 2));
-  // } else {
-  //   console.debug("GETting: " + url);
-  // }
-  const request = superagent.get(url)
-                            .set("content-type", "application/json; charset=utf-8")
-                            .set("accept", "application/json");
-  if (query) {
-    request.query(query);
-  }
-  return request.catch(error => {
-      const response = error.response;
-      console.error("errornous request: " + JSON.stringify(response, null, 2));
-    });
-}
-
-async function postSensor(sensor) {
-  return sendPost(staBaseUrl + "/Sensors", sensor);
-}
-
-async function postObservedProperty(observedProperty) {
-  return sendPost(staBaseUrl + "/ObservedProperties", observedProperty);
-}
-
-async function postThing(thing) {
-  // console.debug(JSON.stringify(thing));
-  return sendPost(staBaseUrl + "/Things", thing);
-}
-
-async function postProject(project) {
-  //console.debug(project);
-  return sendPost(staBaseUrl + "/Projects", project);
-}
-
-async function postParty(party) {
-  return sendPost(staBaseUrl + "/Parties", party);
-}
-
-async function postLicense(license) {
-  //console.debug(license);
-  return sendPost(staBaseUrl + "/Licenses", license);
-}
-
-async function postGroup(group) {
-  //console.debug(group);
-  return sendPost(staBaseUrl + "/ObservationGroups", group);
-}
-
-async function postFeature(feature) {
-  //console.debug(feature);
-  return sendPost(staBaseUrl + "/FeaturesOfInterest", feature);
-}
-
-async function postObservation(observation) {
-  //console.debug(group);
-  return sendPost(staBaseUrl + "/Observations", observation);
-}
-
-async function sendPost(url, payload) {
-  // console.debug("POSTing to: " + url + "\n", JSON.stringify(payload, null, 2));
-  return superagent.post(url)
-                   .send(payload)
-                   .set("content-type", "application/json; charset=utf-8")
-                   .set("accept", "application/json");
-                  //  .catch(error => {
-                  //    const response = error.response;
-                  //    const stringResponse = JSON.stringify(response, null, 2);
-                  //    console.error(stringResponse);
-                  //    fs.writeFile(`${process.env.TMPDIR}/tmp/dataloadingerrors/${payload.name}.txt`, stringResponse, function (err) {
-                  //      if (err) {
-                  //        console.error("Error saving file.");
-                  //       };
-                  //       console.debug('File saved!');
-                  //     });
-                  //   });
-}
 
 const columns = [
   "Altitud",
@@ -874,4 +717,4 @@ const columns = [
   "usuario externo",
   "uuid",
   "zic_time_zone"
-  ];
+];

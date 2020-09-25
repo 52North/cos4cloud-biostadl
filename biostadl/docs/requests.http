@@ -1,0 +1,55 @@
+
+
+POST http://localhost:8080/sta/Datastreams
+Accept: application/json
+Content-Type: application/json
+
+{
+    "name": "A datastream of taxons",
+    "Thing": {
+    "@iot.id": "233"
+    },
+    "Sensor": {
+    "@iot.id": "citizen_scientist"
+    },
+    "ObservedProperty": {
+    "@iot.id": "taxon"
+    },
+    "observationType": "http://purl.org/biodiversity/taxon/",
+    "unitOfMeasurement": {
+    "name": null,
+    "symbol": null,
+    "definition": null
+    },
+    "description": "Taxon Datastream for user 233",
+    "Observations": [
+    {
+        "FeatureOfInterest": {
+        "@iot.id": "feature_64775"
+        },
+        "resultTime": "2018-05-03T14:35:34Z",
+        "phenomenonTime": "2018-05-03T14:35:34Z",
+        "result": "Cistus salviifolius",
+        "parameters": [
+        {
+            "name": "taxon_name",
+            "value": "Cistus salviifolius"
+        },
+        {
+            "name": "fenofase",
+            "value": "Fruits mig madurs (aproximadament el 50% dels fruits tenen color)"
+        }
+        ],
+        "ObservationRelation": {
+        "type": "root",
+        "name": "Composite relation",
+        "description": "Composite relation",
+        "ObservationGroup": {
+            "@iot.id": "group_64775"
+        }
+        }
+    
+    }
+    ],
+    "License": {}
+}

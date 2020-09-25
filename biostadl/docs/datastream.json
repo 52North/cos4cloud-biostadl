@@ -1,0 +1,316 @@
+{
+    "name": "A datastream of taxons",
+    "Thing": {
+        "@iot.id": "233"
+    },
+    "Sensor": {
+        "@iot.id": "citizen_scientist"
+    },
+    "ObservedProperty": {
+        "@iot.id": "taxon"
+    },
+    "observationType": "http://purl.org/biodiversity/taxon/",
+    "unitOfMeasurement": {
+        "name": null,
+        "symbol": null,
+        "definition": null
+    },
+    "description": "Taxon Datastream for user 233",
+    "Observations": [
+        {
+            "FeatureOfInterest": {
+                "@iot.id": "feature_64775"
+            },
+            "resultTime": "2018-05-03T14:35:34Z",
+            "phenomenonTime": "2018-05-03T14:35:34Z",
+            "result": "Cistus salviifolius",
+            "parameters": [
+                {
+                    "name": "taxon_name",
+                    "value": "Cistus salviifolius"
+                },
+                {
+                    "name": "fenofase",
+                    "value": "Fruits mig madurs (aproximadament el 50% dels fruits tenen color)"
+                }
+            ],
+            "ObservationRelation": {
+                "type": "root",
+                "name": "Composite relation",
+                "description": "Composite relation",
+                "ObservationGroup": {
+                    "@iot.id": "group_64775"
+                }
+            }
+        },
+        {
+            "FeatureOfInterest": {
+                "@iot.id": "feature_38732"
+            },
+            "resultTime": "2018-03-08T08:34:28Z",
+            "phenomenonTime": "2018-03-08T08:34:28Z",
+            "result": "Cotorra Argentina (Myiopsitta monachus)",
+            "parameters": [
+                {
+                    "name": "taxon_name",
+                    "value": "Myiopsitta monachus"
+                },
+                {
+                    "name": "fenofase",
+                    "value": "S'ha detectat (s'ha vist o escoltat) la seva pres�ncia"
+                }
+            ],
+            "ObservationRelation": {
+                "type": "root",
+                "name": "Composite relation",
+                "description": "Composite relation",
+                "ObservationGroup": {
+                    "@iot.id": "group_38732"
+                }
+            }
+        },
+        {
+            "FeatureOfInterest": {
+                "@iot.id": "feature_35592"
+            },
+            "resultTime": "2018-02-08T16:03:38Z",
+            "phenomenonTime": "2018-02-08T16:03:38Z",
+            "result": "Crataegus monogyna",
+            "parameters": [
+                {
+                    "name": "taxon_name",
+                    "value": "Crataegus monogyna"
+                },
+                {
+                    "name": "fenofase",
+                    "value": "Primeres flors obertes"
+                }
+            ],
+            "ObservationRelation": {
+                "type": "root",
+                "name": "Composite relation",
+                "description": "Composite relation",
+                "ObservationGroup": {
+                    "@iot.id": "group_35592"
+                }
+            }
+        },
+        {
+            "FeatureOfInterest": {
+                "@iot.id": "feature_34462"
+            },
+            "resultTime": "2018-02-01T07:36:59Z",
+            "phenomenonTime": "2018-02-01T07:36:59Z",
+            "result": "Serinus serinus",
+            "parameters": [
+                {
+                    "name": "taxon_name",
+                    "value": "Serinus serinus"
+                },
+                {
+                    "name": "fenofase",
+                    "value": "S'ha detectat (s'ha vist o escoltat) la seva pres�ncia"
+                }
+            ],
+            "ObservationRelation": {
+                "type": "root",
+                "name": "Composite relation",
+                "description": "Composite relation",
+                "ObservationGroup": {
+                    "@iot.id": "group_34462"
+                }
+            }
+        },
+        {
+            "FeatureOfInterest": {
+                "@iot.id": "feature_34460"
+            },
+            "resultTime": "2018-02-01T07:34:17Z",
+            "phenomenonTime": "2018-02-01T07:34:17Z",
+            "result": "Serinus serinus",
+            "parameters": [
+                {
+                    "name": "taxon_name",
+                    "value": "Serinus serinus"
+                },
+                {
+                    "name": "fenofase",
+                    "value": "S'ha detectat (s'ha vist o escoltat) la seva pres�ncia"
+                }
+            ],
+            "ObservationRelation": {
+                "type": "root",
+                "name": "Composite relation",
+                "description": "Composite relation",
+                "ObservationGroup": {
+                    "@iot.id": "group_34460"
+                }
+            }
+        },
+        {
+            "FeatureOfInterest": {
+                "@iot.id": "feature_34033"
+            },
+            "resultTime": "2018-01-24T09:41:03Z",
+            "phenomenonTime": "2018-01-24T09:41:03Z",
+            "result": "T?rtola turca (Streptopelia decaocto)",
+            "parameters": [
+                {
+                    "name": "taxon_name",
+                    "value": "Streptopelia decaocto"
+                },
+                {
+                    "name": "fenofase",
+                    "value": "S'ha detecta…m",
+                    "parameters": [
+                        {
+                            "name": "taxon_name",
+                            "value": "Delichon urbicum"
+                        },
+                        {
+                            "name": "fenofase",
+                            "value": "Observaci�n"
+                        }
+                    ],
+                    "ObservationRelation": {
+                        "type": "root",
+                        "name": "Composite relation",
+                        "description": "Composite relation",
+                        "ObservationGroup": {
+                            "@iot.id": "group_15626"
+                        }
+                    }
+                },
+                {
+                    "FeatureOfInterest": {
+                        "@iot.id": "feature_15624"
+                    },
+                    "resultTime": "2017-07-01T18:08:16Z",
+                    "phenomenonTime": "2017-07-01T18:08:16Z",
+                    "result": "Eryngium campestre",
+                    "parameters": [
+                        {
+                            "name": "taxon_name",
+                            "value": "Eryngium campestre"
+                        },
+                        {
+                            "name": "fenofase",
+                            "value": "Floraci�n"
+                        }
+                    ],
+                    "ObservationRelation": {
+                        "type": "root",
+                        "name": "Composite relation",
+                        "description": "Composite relation",
+                        "ObservationGroup": {
+                            "@iot.id": "group_15624"
+                        }
+                    }
+                },
+                {
+                    "FeatureOfInterest": {
+                        "@iot.id": "feature_14115"
+                    },
+                    "resultTime": "2017-06-12T04:22:05Z",
+                    "phenomenonTime": "2017-06-12T04:22:05Z",
+                    "result": "Stictoleptura rubra",
+                    "parameters": [
+                        {
+                            "name": "taxon_name",
+                            "value": "Stictoleptura rubra"
+                        },
+                        {
+                            "name": "fenofase",
+                            "value": "Observaci�n"
+                        }
+                    ],
+                    "ObservationRelation": {
+                        "type": "root",
+                        "name": "Composite relation",
+                        "description": "Composite relation",
+                        "ObservationGroup": {
+                            "@iot.id": "group_14115"
+                        }
+                    }
+                },
+                {
+                    "FeatureOfInterest": {
+                        "@iot.id": "feature_14096"
+                    },
+                    "resultTime": "2017-06-11T17:40:08Z",
+                    "phenomenonTime": "2017-06-11T17:40:08Z",
+                    "result": "Luscinia megarhynchos",
+                    "parameters": [
+                        {
+                            "name": "taxon_name",
+                            "value": "Luscinia megarhynchos"
+                        },
+                        {
+                            "name": "fenofase",
+                            "value": "Observaci�n"
+                        }
+                    ],
+                    "ObservationRelation": {
+                        "type": "root",
+                        "name": "Composite relation",
+                        "description": "Composite relation",
+                        "ObservationGroup": {
+                            "@iot.id": "group_14096"
+                        }
+                    }
+                },
+                {
+                    "FeatureOfInterest": {
+                        "@iot.id": "feature_14056"
+                    },
+                    "resultTime": "2017-06-11T07:04:02Z",
+                    "phenomenonTime": "2017-06-11T07:04:02Z",
+                    "result": "Lonicera implexa",
+                    "parameters": [
+                        {
+                            "name": "taxon_name",
+                            "value": "Lonicera implexa"
+                        },
+                        {
+                            "name": "fenofase",
+                            "value": "Floraci�n"
+                        }
+                    ],
+                    "ObservationRelation": {
+                        "type": "root",
+                        "name": "Composite relation",
+                        "description": "Composite relation",
+                        "ObservationGroup": {
+                            "@iot.id": "group_14056"
+                        }
+                    }
+                },
+                {
+                    "FeatureOfInterest": {
+                        "@iot.id": "feature_760"
+                    },
+                    "resultTime": "2016-04-19T15:25:27Z",
+                    "phenomenonTime": "2016-04-19T15:25:27Z",
+                    "result": "Delichon urbicum",
+                    "parameters": [
+                        {
+                            "name": "taxon_name",
+                            "value": "Delichon urbicum"
+                        },
+                        {
+                            "name": "fenofase",
+                            "value": "Observaci�n"
+                        }
+                    ],
+                    "ObservationRelation": {
+                        "type": "root",
+                        "name": "Composite relation",
+                        "description": "Composite relation",
+                        "ObservationGroup": {
+                            "@iot.id": "group_760"
+                        }
+                    }
+                }
+            ],
+            "License": {}
+        }
