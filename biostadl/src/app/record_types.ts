@@ -1,6 +1,6 @@
 
-import { ObservationRelation, OM_TYPE } from "../sta/citSciTypes";
 import { Thing, FeatureOfInterest, Observation, NamedValue } from "../sta/staTypes";
+import { PHOTO_DEFINITION } from "../sta/citSciTypes";
 
 export type Record = {
     readonly id: string;
@@ -26,7 +26,7 @@ export type CitSciProject = {
 export type CitSciObservation = {
     readonly name: string;
     readonly result: any;
-    readonly type: OM_TYPE;
+    readonly type: string;
     readonly validTime?: any;
     readonly parameters?: NamedValue[];
     readonly resultQuality?: any;

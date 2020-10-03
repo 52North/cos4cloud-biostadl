@@ -1,8 +1,8 @@
 import { DataStream, NamedValue, Observation, StaBase, StaReference } from "./staTypes";
 
 export const OM_TYPE_CATEGORY: string = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation";
-export const TAXON_DEFINITION: string = "http://purl.org/biodiversity/taxon/";
-export const PHOTO_DEFINITION: string = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation";
+export const TAXON_DEFINITION: string = "https://archive.org/services/purl/domain/taxon";
+export const PHOTO_DEFINITION: string = "http://people.ne.mediaone.net/scox/data";
 export enum OM_TYPE { OM_TYPE_TAXON, OM_TYPE_PHOTO };
 
 export type CitSciDataStream = DataStream & {
@@ -35,6 +35,9 @@ export type Project = StaBase & {
     readonly url?: string;
     readonly runtime: string;
     readonly Datastreams?: DataStream[];
+    readonly classification: string;
+    readonly termsOfUse: string;
+    readonly privacyPolicy: string;
 }
 
 export type ObservationGroup = StaBase & {

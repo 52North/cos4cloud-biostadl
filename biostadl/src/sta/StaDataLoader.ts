@@ -2,11 +2,10 @@
 import STA from "./sta_service";
 
 import { EMPTY_UOM, STA_ID } from "../config/Constants";
-import { CitSciObservation, Record } from "../app/record_types";
-import { createRef, DataStream, FeatureOfInterest, HistoricalLocation, Observation, ObservedProperty, Sensor, StaReference, Thing } from "./staTypes";
+import { Record } from "../app/record_types";
+import { createRef, Observation, ObservedProperty, Sensor, Thing } from "./staTypes";
 import RecordParser from "../app/RecordParser";
-import { License, ObservationGroup, ObservationRelation, OM_TYPE, PHOTO_DEFINITION, TAXON_DEFINITION, Project, OM_TYPE_CATEGORY, Party, CitSciDataStream } from "./citSciTypes";
-import { create } from "domain";
+import { License, ObservationGroup, OM_TYPE, PHOTO_DEFINITION, TAXON_DEFINITION, Project, Party, CitSciDataStream, OM_TYPE_CATEGORY } from "./citSciTypes";
 
 type ObservationComposite = {
     readonly thingPending: Promise<Thing>;
@@ -25,14 +24,15 @@ export class StaDataLoader {
     load(records: Record[]) {
 
         Promise.all([
-            gracefullyResolve(addLicense(this.sta).then(r => r.body)),
-            gracefullyResolve(addSensor(this.sta).then(r => r?.body)),
-            gracefullyResolve(addObservedProperties(this.sta)),
+            addLicense(this.sta).then(r => r.body),
+            addSensor(this.sta).then(r => r?.body),
+            addObservedProperties(this.sta),
             gracefullyResolve(addFeatures(this.sta, records))
         ]).then(async (result: any[]) => {
             const composites = await addThings(this.sta, records);
-
-            // TODO projects
+            composites.forEach(c => {
+                if (!c) composites.delete(c);
+            })
 
             const jobs: Promise<any>[] = [];
             records.forEach(record => {
@@ -82,12 +82,12 @@ async function addLicense(sta: STA) {
 async function addSensor(sta: STA) {
     return sta.getSensors().then(response => {
         const sensors = response.body;
-        const sensorId = "citizen_scientist";
+        const sensorId = "citizen_observation";
         if (!hasElement(sensors, sensorId))
             return sta.postSensor({
                 [STA_ID]: sensorId,
-                name: "Citizen Scientist",
-                description: "Person sharing individual observations to the public for scientific use",
+                name: "Citizen Observation",
+                description: "Observation process of a person sharing individual observations to the public for scientific use",
                 encodingType: "application/pdf",
                 metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
             } as Sensor);
@@ -95,7 +95,6 @@ async function addSensor(sta: STA) {
 }
 
 async function addObservedProperties(sta: STA) {
-    // create observed properties
     const jobs: Promise<ObservedProperty>[] = [];
     sta.getObservedProperties().then(response => {
         const obsProps = response.body;
@@ -140,6 +139,7 @@ async function addThings(sta: STA, records: Record[]) {
         if (!composites.has(userId)) {
             const histLoc = RecordParser.createHistoricalLocation(record);
             const thing = gracefullyResolve(sta.postThing({
+                "@iot.id": `device_${user.id}`,
                 name: user.name,
                 description: `Mobile Phone of user ${user.id}`,
                 properties: {
@@ -169,7 +169,8 @@ async function addThings(sta: STA, records: Record[]) {
                 const histLoc = RecordParser.createHistoricalLocation(record, id);
                 return gracefullyResolve(sta.postHistoricalLocation(histLoc));
             }).catch(error => {
-                console.error(`invalid thing: ${error}`);
+                console.error(`invalid thing: ${error} with user ${userId}`);
+                composites.delete(userId);
                 return;
             });
         }
@@ -184,12 +185,8 @@ async function addDatastreams(sta: STA, state: any) {
     const sensor = await state.sensor as Sensor;
 
     const jobs: Promise<any>[] = [];
-    addProjects(sta, allRecords).then((projects: Project[]) => {
-        projects.forEach((project: Project) => {
-            if (!project) {
-                return;
-            }
-            const projectId = project["@iot.id"];
+    addProjects(sta, allRecords).then((projectIds: string[]) => {
+        projectIds.forEach((projectId: string) => {
             const sensorId = sensor["@iot.id"];
             composites.forEach(async (composite) => {
 
@@ -210,7 +207,7 @@ async function addDatastreams(sta: STA, state: any) {
                         observationType: OM_TYPE_CATEGORY,
                         unitOfMeasurement: EMPTY_UOM,
                         description: `Taxon Datastream for user ${party.nickname}`,
-                        Observations: createObservations(projectRecords, OM_TYPE.OM_TYPE_TAXON),
+                        Observations: createObservations(projectRecords, TAXON_DEFINITION),
                         License: createRef(licenseId),
                         Project: createRef(projectId)
                     } as CitSciDataStream)));
@@ -221,10 +218,10 @@ async function addDatastreams(sta: STA, state: any) {
                         Party: createRef(partyId),
                         Sensor: createRef(sensorId),
                         ObservedProperty: createRef("photo"),
-                        observationType: OM_TYPE_CATEGORY,
+                        observationType: PHOTO_DEFINITION,
                         unitOfMeasurement: EMPTY_UOM,
                         description: `Photo Datastream for user ${party.nickname}`,
-                        Observations: createObservations(projectRecords, OM_TYPE.OM_TYPE_PHOTO),
+                        Observations: createObservations(projectRecords, PHOTO_DEFINITION),
                         License: createRef(licenseId),
                         Project: createRef(projectId)
                     } as CitSciDataStream)));
@@ -246,19 +243,21 @@ async function addProjects(sta: STA, records: Record[]) {
             .filter(project => !hasElement(allProjects, project.id))
             .filter(project => !projects.has(project.id))
             .forEach(project => projects.set(project.id, project));
-        return Promise.all(Array.from(projects.keys())
-            .map(id => projects.get(id))
+        return Promise.all(Object.values(projects)
             .map(project => gracefullyResolve(sta.postProject({
                 "@iot.id": project.id,
                 name: project.title,
                 description: "This is a demo project",
                 runtime: "2020-06-25T03:42:02-02:00",
+                classification: "NA",
+                termsOfUse: "https://example.org/terms",
+                privacyPolicy: "https://exmaple.org/privacy",
                 Datastreams: []
-            }).then(r => r.body))));
+            })))).then(() => Object.keys(projects));
     });
 }
 
-function createObservations(records: Record[], type: OM_TYPE): Observation[] {
+function createObservations(records: Record[], type: string): Observation[] {
     if (!records) {
         return [];
     }
@@ -269,17 +268,16 @@ function createObservations(records: Record[], type: OM_TYPE): Observation[] {
         const resultTime = record.resultTime;
         const citSciObservations = record.observations;
 
-        const relations = [];
         const mappedObservations = citSciObservations.filter(o => o.type === type)
             .map(o => {
                 return {
-                    ["@iot.id"]: record.id + "_" + o.name,
+                    // ["@iot.id"]: record.id + "_" + o.name,
                     FeatureOfInterest: createRef(record.feature["@iot.id"]),
                     resultTime,
                     phenomenonTime,
                     result: o.result,
                     parameters: o.parameters,
-                    resultQuality: o.resultQuality,
+                    resultQuality: o.resultQuality || "NA",
                     ObservationRelations: [{
                         "@iot.id": "CompositeRelation_" + record.id + "_" + o.name,
                         type: "root",

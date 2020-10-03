@@ -1,4 +1,3 @@
-import { OM_TYPE, Project } from "./citSciTypes";
 
 export type StaReference = {
     readonly "@iot.id": string;

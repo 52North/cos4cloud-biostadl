@@ -1,55 +1,55 @@
-
-
-POST http://localhost:8080/sta/Datastreams
+### POST a new relation
+POST http://localhost:8080/sta/ObservationRelations
 Accept: application/json
 Content-Type: application/json
 
 {
-    "name": "A datastream of taxons",
-    "Thing": {
-    "@iot.id": "233"
+    "type": "root",
+    "ObservationGroup": {
+        "iot.id": "group_258288"
     },
-    "Sensor": {
-    "@iot.id": "citizen_scientist"
-    },
-    "ObservedProperty": {
-    "@iot.id": "taxon"
-    },
-    "observationType": "http://purl.org/biodiversity/taxon/",
+    "description": "Composite group of a citizen science observation",
+    "Observation": { "iot.id": "80c7495c-3dff-4d6a-b285-b3c9a44b3cb1"}
+}
+
+### Get all composite observations inkl. group id
+
+GET http://localhost:8080/sta/Observations
+    ?$expand=ObservationRelations($select=type,ObservationGroup;$expand=ObservationGroup($select=name,description,id;$filter=properties/type eq 'topLevel'))
+    &$select=result,phenomenonTime,ObservationRelations
+Accept: application/json
+
+###  Composite observations
+
+GET http://localhost:8080/sta/ObservationGroups
+    ?$filter=properties/type eq 'topLevel'
+    &$expand=ObservationRelations($expand=Observation($select=result,resultTime;$expand=Datastream/ObservedProperty))
+Accept: application/json
+
+### Create comment Datastream
+
+POST  http://localhost:8080/sta/Datastreams
+Accept: application/json
+
+{
+    "name": "Comments",
+    "description": "Stream of user comments",
+    "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TextObservation",
     "unitOfMeasurement": {
-    "name": null,
-    "symbol": null,
-    "definition": null
+        "name": null,
+        "symbol": null,
+        "definition": null
     },
-    "description": "Taxon Datastream for user 233",
-    "Observations": [
-    {
-        "FeatureOfInterest": {
-        "@iot.id": "feature_64775"
-        },
-        "resultTime": "2018-05-03T14:35:34Z",
-        "phenomenonTime": "2018-05-03T14:35:34Z",
-        "result": "Cistus salviifolius",
-        "parameters": [
-        {
-            "name": "taxon_name",
-            "value": "Cistus salviifolius"
-        },
-        {
-            "name": "fenofase",
-            "value": "Fruits mig madurs (aproximadament el 50% dels fruits tenen color)"
-        }
-        ],
-        "ObservationRelation": {
-        "type": "root",
-        "name": "Composite relation",
-        "description": "Composite relation",
-        "ObservationGroup": {
-            "@iot.id": "group_64775"
-        }
-        }
-    
-    }
-    ],
-    "License": {}
+    "Project": { "iot.id": "302" },
+    "ObservedProperty": {
+        "iot.id": "comment",
+        "name": "Comment",
+        "description": "A user comment",
+        "definition": "http://www.w3.org/2000/01/rdf-schema#comment",
+        "DataStreams": []
+    },
+    "Licence": { "iot.id": "MIT_LICENSE" },
+    "Thing"
+    "Observations": [],
+    "ObservationGroups"
 }

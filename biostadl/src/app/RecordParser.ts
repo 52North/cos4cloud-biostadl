@@ -4,7 +4,7 @@ import { staBaseUrl } from "../config/Config";
 import { EMPTY_UOM, NATUSFERA_BASE_URL, STA_ID } from "../config/Constants";
 import DataLoader from "./CSVReader";
 import { Record, CitSciObservation, CitScientist, CitSciProject } from "./record_types";
-import { OM_TYPE } from "../sta/citSciTypes";
+import { OM_TYPE, PHOTO_DEFINITION, TAXON_DEFINITION } from "../sta/citSciTypes";
 import { FeatureOfInterest, HistoricalLocation, NamedValue, Observation } from "../sta/staTypes";
 import CitSciDataProvider from "./CitSciIEDataProvider";
 
@@ -94,7 +94,7 @@ function createObservations(row: any): CitSciObservation[] {
 function createTaxonObservation(row: any): CitSciObservation {
     return {
         name: "taxon",
-        type: OM_TYPE.OM_TYPE_TAXON,
+        type: TAXON_DEFINITION,
         result: row.species_guess,
         parameters: [
             // TODO own observations?!
@@ -117,7 +117,7 @@ function createPhotoObservations(row: any): CitSciObservation[] {
             name: `photo_${i}`,
             parameters: createPhotoParameters(row, i),
             result: row[`photo_large_url_${i}`],
-            type: OM_TYPE.OM_TYPE_PHOTO,
+            type: PHOTO_DEFINITION,
         });
     }
     return observations;
