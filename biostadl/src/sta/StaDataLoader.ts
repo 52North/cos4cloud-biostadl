@@ -2,7 +2,7 @@
 import STA from "./sta_service";
 
 import { EMPTY_UOM, STA_ID } from "../config/Constants";
-import { Record } from "../app/record_types";
+import { CitSciProject, Record } from "../app/record_types";
 import { createRef, Observation, ObservedProperty, Sensor, Thing } from "./staTypes";
 import RecordParser from "../app/RecordParser";
 import { License, ObservationGroup, OM_TYPE, PHOTO_DEFINITION, TAXON_DEFINITION, Project, Party, CitSciDataStream, OM_TYPE_CATEGORY } from "./citSciTypes";
@@ -185,8 +185,9 @@ async function addDatastreams(sta: STA, state: any) {
     const sensor = await state.sensor as Sensor;
 
     const jobs: Promise<any>[] = [];
-    addProjects(sta, allRecords).then((projectIds: string[]) => {
-        projectIds.forEach((projectId: string) => {
+    addProjects(sta, allRecords).then((projects: Project[]) => {
+        projects.forEach(project => {
+            const projectId = project["@iot.id"];
             const sensorId = sensor["@iot.id"];
             composites.forEach(async (composite) => {
 
@@ -218,7 +219,7 @@ async function addDatastreams(sta: STA, state: any) {
                         Party: createRef(partyId),
                         Sensor: createRef(sensorId),
                         ObservedProperty: createRef("photo"),
-                        observationType: PHOTO_DEFINITION,
+                        observationType: OM_TYPE_CATEGORY,
                         unitOfMeasurement: EMPTY_UOM,
                         description: `Photo Datastream for user ${party.nickname}`,
                         Observations: createObservations(projectRecords, PHOTO_DEFINITION),
@@ -229,7 +230,6 @@ async function addDatastreams(sta: STA, state: any) {
             });
         });
     });
-
 
     return Promise.all(jobs);
 }
@@ -243,7 +243,8 @@ async function addProjects(sta: STA, records: Record[]) {
             .filter(project => !hasElement(allProjects, project.id))
             .filter(project => !projects.has(project.id))
             .forEach(project => projects.set(project.id, project));
-        return Promise.all(Object.values(projects)
+        return Promise.all(Array.from(projects.keys())
+            .map(id => projects.get(id))
             .map(project => gracefullyResolve(sta.postProject({
                 "@iot.id": project.id,
                 name: project.title,
@@ -253,7 +254,7 @@ async function addProjects(sta: STA, records: Record[]) {
                 termsOfUse: "https://example.org/terms",
                 privacyPolicy: "https://exmaple.org/privacy",
                 Datastreams: []
-            })))).then(() => Object.keys(projects));
+            }).then(r => r.body))));
     });
 }
 
@@ -264,17 +265,18 @@ function createObservations(records: Record[], type: string): Observation[] {
 
     const observations: Observation[] = [];
     records.forEach(record => {
-        const phenomenonTime = record.resultTime;
-        const resultTime = record.resultTime;
+        const resultTime = new Date(record.resultTime);
         const citSciObservations = record.observations;
 
         const mappedObservations = citSciObservations.filter(o => o.type === type)
-            .map(o => {
+            .map((o, i) => {
+                // get unique composite key for each entity
+                const phenomenonTime = new Date(resultTime.getMilliseconds() - i);
                 return {
                     // ["@iot.id"]: record.id + "_" + o.name,
                     FeatureOfInterest: createRef(record.feature["@iot.id"]),
-                    resultTime,
-                    phenomenonTime,
+                    resultTime: resultTime.toISOString(),
+                    phenomenonTime: phenomenonTime.toISOString(),
                     result: o.result,
                     parameters: o.parameters,
                     resultQuality: o.resultQuality || "NA",
