@@ -19,7 +19,7 @@ The module POSTs all parsed data to an unprotected API. By default the STA API e
 Compiles the whole module
 
 ```sh
-node build
+npm run build
 ```
 
 Output compiled files can be found under `out`.
@@ -29,7 +29,7 @@ Output compiled files can be found under `out`.
 Run continuous typescript compilation
 
 ```sh
-node watch
+npm run watch
 ```
 
 ## Run
