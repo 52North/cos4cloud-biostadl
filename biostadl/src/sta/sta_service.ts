@@ -156,6 +156,14 @@ async function _sendPayload(httpMethod: SuperAgentRequest, json: any): Promise<a
     return httpMethod.send(json)
         .set("content-type", "application/json; charset=utf-8")
         .set("accept", "application/json")
+        .then(response => {
+            if (response.status === 201) {
+                // follow location after entity creation
+                const location = response.header?.location;
+                return location ? _sendGet(location, {}) : response;
+            }
+            return response;
+        })
         .catch(error => {
             const response = error.response;
             console.debug(JSON.stringify(response, null, 2));
