@@ -37,8 +37,8 @@ export class StaDataLoader {
             const jobs: Promise<any>[] = [];
             records.forEach(record => {
                 jobs.push(gracefullyResolve(this.sta.postGroup({
-                    "@iot.id": "group_" + record.id,
-                    name: "Observation composition " + record.id,
+                    "@iot.id": `composite_group_${record.id}`,
+                    name: `Observation composition ${record.id}`,
                     description: "Composite group of a citizen science observation",
                     ObservationRelations: [],
                     properties: {
@@ -285,7 +285,7 @@ function createObservations(records: Record[], type: string): Observation[] {
                         type: "root",
                         name: "Composite relation",
                         description: "Composite relation",
-                        Group: createRef(`group_${record.id}`)
+                        Group: createRef(`composite_group_${record.id}`)
                     }]
                 } as Observation;
             });
