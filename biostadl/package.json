@@ -15,7 +15,8 @@
   "dependencies": {
     "csv-parse": "^4.9.1",
     "superagent": "^5.2.2",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "uuid-by-string": "^3.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.12",

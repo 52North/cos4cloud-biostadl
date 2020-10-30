@@ -1,16 +1,31 @@
 
 import STA from "./sta_service";
 
-import { EMPTY_UOM, STA_ID } from "../config/Constants";
-import { CitSciProject, Record } from "../app/record_types";
-import { createRef, Observation, ObservedProperty, Sensor, Thing } from "./staTypes";
+import { EMPTY_UOM, NATUSFERA_BASE_URL, STA_ID } from "../config/Constants";
+import { CitSciObservation, CitSciProject, ParsedRecord } from "../app/record_types";
 import RecordParser from "../app/RecordParser";
-import { License, ObservationGroup, OM_TYPE, PHOTO_DEFINITION, TAXON_DEFINITION, Project, Party, CitSciDataStream, OM_TYPE_CATEGORY } from "./citSciTypes";
+import {
+    createRef,
+    ObservedProperty,
+    Sensor,
+    Thing,
+    License,
+    ObservationGroup,
+    OM_TYPE,
+    PHOTO_DEFINITION,
+    TAXON_DEFINITION,
+    Project, Party,
+    DataStream,
+    OM_TYPE_CATEGORY,
+    Observation
+} from "./staTypes";
+
+const getUuid = require('uuid-by-string');
 
 type ObservationComposite = {
     readonly thingPending: Promise<Thing>;
     readonly partyPending: Promise<Party>;
-    readonly records: Record[];
+    readonly records: ParsedRecord[];
 }
 
 export class StaDataLoader {
@@ -21,11 +36,11 @@ export class StaDataLoader {
         this.sta = sta;
     }
 
-    load(records: Record[]) {
-
+    load(data: { projects: CitSciProject[], records: ParsedRecord[] }) {
+        const records = data.records;
         Promise.all([
-            addLicense(this.sta).then(r => r.body),
-            addSensor(this.sta).then(r => r?.body),
+            addSensors(this.sta),
+            addLicenses(this.sta),
             addObservedProperties(this.sta),
             gracefullyResolve(addFeatures(this.sta, records))
         ]).then(async (result: any[]) => {
@@ -47,50 +62,103 @@ export class StaDataLoader {
                 } as ObservationGroup)))
             });
 
-            const allRecords = records;
             Promise.all(jobs).then(() => {
                 addDatastreams(this.sta, {
-                    allRecords,
-                    license: result[0],
-                    sensor: result[1],
+                    data,
+                    sensors: result[0],
+                    license: result[1],
                     observedProperties: result[2],
                     composites
                 });
 
-            })
+            });
+
+            // TODO add verification streams and comments streams
 
         });
     }
 }
 
-async function addLicense(sta: STA) {
-    return sta.getLicenses().then(response => {
-        const licenses = response.body;
-        const licId = "MIT_LICENSE";
-        if (!hasElement(licenses, licId)) {
-            return sta.postLicense({
-                [STA_ID]: licId,
-                name: "MIT License",
-                definition: "https://opensource.org/licenses/MIT",
-                logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/MIT_logo.sßvg/220px-MIT_logo.svg.png",
-                Datastreams: []
-            } as License);
+async function addLicenses(sta: STA) {
+
+    const licenses: License[] = [
+        {
+            [STA_ID]: "CC_BY-SA",
+            name: "Attribution-ShareAlike",
+            definition: "https://creativecommons.org/licenses/by-sa/4.0",
+            logo: "https://licensebuttons.net/l/by-sa/3.0/88x31.png",
+            Datastreams: []
+        },
+        {
+            [STA_ID]: "CC_BY-ND",
+            name: "Attribution-NoDerivs",
+            definition: "https://creativecommons.org/licenses/by-nd/4.0",
+            logo: "https://licensebuttons.net/l/by-nd/3.0/88x31.png",
+            Datastreams: []
+        },
+        {
+            [STA_ID]: "CC_BY-NC",
+            name: "Attribution-NonCommercial",
+            definition: "https://creativecommons.org/licenses/by-nc/4.0",
+            logo: "https://licensebuttons.net/l/by-nc/3.0/88x31.png",
+            Datastreams: []
+        },
+        {
+            [STA_ID]: "CC_BY-NC-SA",
+            name: "Attribution-NonCommercial-ShareAlike",
+            definition: "https://creativecommons.org/licenses/by-nc-sa/4.0",
+            logo: "https://licensebuttons.net/l/by-nc-sa/3.0/88x31.png",
+            Datastreams: []
+        },
+        {
+            [STA_ID]: "CC_BY-NC-ND",
+            name: "Attribution-NonCommercial-NoDerivs",
+            definition: "https://creativecommons.org/licenses/by-nc-nd/4.0",
+            logo: "https://licensebuttons.net/l/by-nc-nd/3.0/88x31.png",
+            Datastreams: []
+        },
+        {
+            [STA_ID]: "CC_BY",
+            name: "Attribution",
+            definition: "https://creativecommons.org/licenses/by/4.0",
+            logo: "https://licensebuttons.net/l/by/3.0/88x31.png",
+            Datastreams: []
+        },
+        {
+            [STA_ID]: "MIT_LICENSE",
+            name: "MIT License",
+            definition: "https://opensource.org/licenses/MIT",
+            logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/MIT_logo.sßvg/220px-MIT_logo.svg.png",
+            Datastreams: []
         }
-    });
+    ];
+
+    const response = await sta.getLicenses();
+    return Promise.all(licenses
+        .filter(license => !hasEntityWithId(response.body, license["@iot.id"]))
+        .map(async license => (await sta.postLicense(license)).body));
 }
 
-async function addSensor(sta: STA) {
+async function addSensors(sta: STA) {
     return sta.getSensors().then(response => {
         const sensors = response.body;
-        const sensorId = "citizen_observation";
-        if (!hasElement(sensors, sensorId))
-            return sta.postSensor({
-                [STA_ID]: sensorId,
-                name: "Citizen Observation",
-                description: "Observation process of a person sharing individual observations to the public for scientific use",
-                encodingType: "application/pdf",
-                metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
-            } as Sensor);
+
+        const processes: Sensor[] = [{
+            [STA_ID]: "citizen_observation",
+            name: "Citizen Observation",
+            description: "Observation process of a person (citizen scientist) sharing individual observations to the public for scientific use",
+            encodingType: "application/pdf",
+            metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
+        }, {
+            [STA_ID]: "biodiversity_expert",
+            name: "Biodiversity Expert",
+            description: "Verification process of an expert person in the field of biodiversity",
+            encodingType: "application/pdf",
+            metadata: "https://www.weobserve.eu/cops-glossary/#6af6a6f33a552b418"
+        }];
+
+        return Promise.all(processes.filter(sensor => !hasEntityWithId(sensors, sensor["@iot.id"]))
+            .map(sensor => sta.postSensor(sensor).then(r => r?.body)));
     });
 }
 
@@ -99,7 +167,7 @@ async function addObservedProperties(sta: STA) {
     sta.getObservedProperties().then(response => {
         const obsProps = response.body;
 
-        if (!hasElement(obsProps, "taxon")) {
+        if (!hasEntityWithId(obsProps, "taxon")) {
             jobs.push(sta.postObservedProperty({
                 [STA_ID]: "taxon",
                 name: "taxon",
@@ -108,7 +176,7 @@ async function addObservedProperties(sta: STA) {
             } as ObservedProperty));
         }
 
-        if (!hasElement(obsProps, "photo")) {
+        if (!hasEntityWithId(obsProps, "photo")) {
             jobs.push(sta.postObservedProperty({
                 [STA_ID]: "photo",
                 name: "photo",
@@ -121,17 +189,17 @@ async function addObservedProperties(sta: STA) {
     return Promise.all(jobs);
 }
 
-async function addFeatures(sta: STA, records: Record[]) {
+async function addFeatures(sta: STA, records: ParsedRecord[]) {
     return sta.getFeatures().then(async response => {
         const features = response.body;
         // each record => observed feature
         return Promise.all(records.map(record => record.feature)
-            .filter(feature => !hasElement(features, feature["@iot.id"]))
+            .filter(feature => !hasEntityWithId(features, feature["@iot.id"]))
             .map(feature => gracefullyResolve(sta.postFeature(feature))));
     });
 }
 
-async function addThings(sta: STA, records: Record[]) {
+async function addThings(sta: STA, records: ParsedRecord[]) {
     const composites: Map<string, ObservationComposite> = new Map();
     await Promise.all(records.map(async record => {
         const user = record.user;
@@ -151,6 +219,7 @@ async function addThings(sta: STA, records: Record[]) {
             const party = gracefullyResolve(sta.postParty({
                 [STA_ID]: userId,
                 nickName: user.name,
+                authId: getUuid(userId),
                 role: "individual",
                 Datastreams: []
             } as Party));
@@ -179,123 +248,148 @@ async function addThings(sta: STA, records: Record[]) {
 }
 
 async function addDatastreams(sta: STA, state: any) {
-    const allRecords = state.allRecords as Record[];
+    const { projects } = state.data as { projects: CitSciProject[] };
+
+    const licenses = state.licenses as License[];
+    const sensors = await state.sensors as Sensor[];
     const composites = state.composites as Map<string, ObservationComposite>;
-    const license = state.license as License;
-    const sensor = await state.sensor as Sensor;
+    const staProjects = await updateProjects(sta, projects);
 
     const jobs: Promise<any>[] = [];
-    addProjects(sta, allRecords).then((projects: Project[]) => {
-        projects.forEach(project => {
-            const projectId = project["@iot.id"];
-            const sensorId = sensor["@iot.id"];
-            composites.forEach(async (composite) => {
+    const sensorId = sensors[0]["@iot.id"];
+    composites.forEach(async (composite) => {
 
-                const thing = (await composite.thingPending);
-                const party = (await composite.partyPending);
-                if (thing && party) {
-                    const thingId = thing["@iot.id"];
-                    const partyId = party["@iot.id"];
-                    const licenseId = license["@iot.id"];
+        const thing = (await composite.thingPending);
+        const party = (await composite.partyPending);
+        if (thing && party) {
+            const thingId = thing["@iot.id"];
+            const partyId = party["@iot.id"];
 
-                    const projectRecords = composite.records.filter(r => r.project.id === projectId)
-                    jobs.push(gracefullyResolve(sta.postDatastream({
-                        name: "A datastream of taxons",
-                        Thing: createRef(thingId),
-                        Party: createRef(partyId),
-                        Sensor: createRef(sensorId),
-                        ObservedProperty: createRef("taxon"),
-                        observationType: OM_TYPE_CATEGORY,
-                        unitOfMeasurement: EMPTY_UOM,
-                        description: `Taxon Datastream for user ${party.nickname}`,
-                        Observations: createObservations(projectRecords, TAXON_DEFINITION),
-                        License: createRef(licenseId),
-                        Project: createRef(projectId)
-                    } as CitSciDataStream)));
+            const projectId = staProjects[0]["@iot.id"];
 
-                    jobs.push(gracefullyResolve(sta.postDatastream({
-                        name: "A datastream of photos",
-                        Thing: createRef(thingId),
-                        Party: createRef(partyId),
-                        Sensor: createRef(sensorId),
-                        ObservedProperty: createRef("photo"),
-                        observationType: OM_TYPE_CATEGORY,
-                        unitOfMeasurement: EMPTY_UOM,
-                        description: `Photo Datastream for user ${party.nickname}`,
-                        Observations: createObservations(projectRecords, PHOTO_DEFINITION),
-                        License: createRef(licenseId),
-                        Project: createRef(projectId)
-                    } as CitSciDataStream)));
+            const records = composite.records;
+            jobs.push(gracefullyResolve(sta.postDatastream({
+                name: "A datastream of taxons",
+                Thing: createRef(thingId),
+                Party: createRef(partyId),
+                Sensor: createRef(sensorId),
+                ObservedProperty: createRef("taxon"),
+                observationType: OM_TYPE_CATEGORY,
+                unitOfMeasurement: EMPTY_UOM,
+                description: `Taxon Datastream for user ${party.nickname}`,
+                Observations: createObservations(records, o => o.type === TAXON_DEFINITION),
+                Project: createRef(projectId)
+            } as DataStream)));
+
+            const photoObservations = filterObservations(records, o=> o.type === PHOTO_DEFINITION);
+
+            // categorize observations along licenses
+            const licensedObservations = new Map<string, CitSciObservation[]>();
+            photoObservations.forEach(o => {
+                const guess = o.licenseGuess?.license;
+                if (!guess || guess.match(/unknown/)) {
+                    return;
                 }
+                if (!licensedObservations.has(guess)) {
+                    licensedObservations.set(guess, []);
+                }
+                licensedObservations.get(guess)!.push(o);
             });
-        });
+            
+            licensedObservations.forEach((observations, licenseId) => {
+                jobs.push(gracefullyResolve(sta.postDatastream({
+                    name: "A datastream of photos",
+                    Thing: createRef(thingId),
+                    Party: createRef(partyId),
+                    Sensor: createRef(sensorId),
+                    ObservedProperty: createRef("photo"),
+                    observationType: OM_TYPE_CATEGORY,
+                    unitOfMeasurement: EMPTY_UOM,
+                    description: `Photo Datastream for user ${party.nickname}`,
+                    Observations: mapToObservations(observations),
+                    License: createRef(licenseId !== "unknown" ? licenseId : undefined),
+                    Project: createRef(projectId),
+                } as DataStream)));
+            });
+        }
     });
 
     return Promise.all(jobs);
 }
 
-async function addProjects(sta: STA, records: Record[]) {
+async function updateProjects(sta: STA, projects: CitSciProject[]) {
     return sta.getProjects().then(async response => {
-        const allProjects = response.body;
-
-        const projects = new Map();
-        records.map(record => record.project)
-            .filter(project => !hasElement(allProjects, project.id))
-            .filter(project => !projects.has(project.id))
-            .forEach(project => projects.set(project.id, project));
-        return Promise.all(Array.from(projects.keys())
-            .map(id => projects.get(id))
+        const knownProjects: Project[] = response.body.value;
+        const addedProjects: Project[] = await Promise.all(projects
+            .filter(project => !hasEntityWithId(knownProjects, project.id))
             .map(project => gracefullyResolve(sta.postProject({
                 "@iot.id": project.id,
                 name: project.title,
                 description: "This is a demo project",
                 runtime: "2020-06-25T03:42:02-02:00",
                 classification: "NA",
+                url: `${NATUSFERA_BASE_URL}/projects/${project.id}`,
                 termsOfUse: "https://example.org/terms",
                 privacyPolicy: "https://exmaple.org/privacy",
                 Datastreams: []
             }).then(r => r.body))));
+        knownProjects.push(...addedProjects);
+        return knownProjects;
     });
 }
 
-function createObservations(records: Record[], type: string): Observation[] {
+function filterObservations(records: ParsedRecord[],
+    predicate: (value: CitSciObservation) => boolean): CitSciObservation[] {
+    
+    const observations: CitSciObservation[] = [];
+    records.forEach(record => {
+        const citSciObservations = record.observations;
+        observations.push(...citSciObservations.filter(predicate));
+    });
+    return observations;
+}
+
+function createObservations(records: ParsedRecord[], predicate?: (value: CitSciObservation) => boolean): Observation[] {
     if (!records) {
         return [];
     }
 
     const observations: Observation[] = [];
     records.forEach(record => {
-        const resultTime = new Date(record.resultTime);
         const citSciObservations = record.observations;
-
-        const mappedObservations = citSciObservations.filter(o => o.type === type)
-            .map((o, i) => {
-                // get unique composite key for each entity
-                const phenomenonTime = new Date(resultTime.getMilliseconds() - i);
-                return {
-                    // ["@iot.id"]: record.id + "_" + o.name,
-                    FeatureOfInterest: createRef(record.feature["@iot.id"]),
-                    resultTime: resultTime.toISOString(),
-                    phenomenonTime: phenomenonTime.toISOString(),
-                    result: o.result,
-                    parameters: o.parameters,
-                    resultQuality: o.resultQuality || "NA",
-                    ObservationRelations: [{
-                        "@iot.id": "CompositeRelation_" + record.id + "_" + o.name,
-                        type: "root",
-                        name: "Composite relation",
-                        description: "Composite relation",
-                        Group: createRef(`composite_group_${record.id}`)
-                    }]
-                } as Observation;
-            });
+        const filteredObservations = predicate ? citSciObservations.filter(predicate) : citSciObservations;
+        const mappedObservations = mapToObservations(filteredObservations);
         observations.push(...mappedObservations);
     });
 
     return observations;
 }
 
-function hasElement(response: any, id: string | undefined) {
+function mapToObservations(observations: CitSciObservation[]): Observation[] {
+    return observations.map((value, index) => {
+        const resultTime = new Date(value.resultTime);
+        // get unique composite key for each entity
+        const phenomenonTime = new Date(resultTime.getMilliseconds() + index);
+        return {
+            // ["@iot.id"]: record.id + "_" + o.name,
+            FeatureOfInterest: createRef(value.featureId),
+            resultTime: resultTime.toISOString(),
+            phenomenonTime: phenomenonTime.toISOString(),
+            result: value.result,
+            parameters: value.parameters,
+            resultQuality: value.resultQuality || "NA",
+            ObservationRelations: [{
+                "@iot.id": "CompositeRelation_" + value.recordId + "_" + value.name,
+                type: "root",
+                name: "Composite relation",
+                description: "Composite relation",
+                Group: createRef(`composite_group_${value.recordId}`)
+            }]
+        } as Observation;
+    });
+}
+
+function hasEntityWithId(response: any, id: string | undefined) {
     const elements = response?.value;
     if (!(elements || Array.isArray(elements))) {
         return false;

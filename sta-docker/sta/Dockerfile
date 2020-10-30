@@ -21,7 +21,7 @@ RUN cd sensorweb-server-db-model \
     && mvn clean install -q -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true
 
 RUN cd sensorweb-server-sta \
-    && mvn clean package -q -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true
+    && mvn clean package -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true
 
 FROM adoptopenjdk/openjdk8:alpine-slim as runstage
 

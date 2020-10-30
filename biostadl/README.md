@@ -39,3 +39,15 @@ The loader can be run by
 ```sh
 node out/index.js
 ```
+
+## Loading Semantics
+
+The data loader tries to load as much data as possible available from CSV example data. However,
+it loading follows some rules:
+
+* License is just guessed from the `attribution` column
+* A fixed set of license will be loaded to the STA:
+  * all CC licenses
+  * MIT license
+* Photo-Observations where no guess can be associated to a known licenses will be ignored
+* Only the first project will be associated to a datastream 

@@ -1,7 +1,7 @@
 import STA from "../sta/sta_service";
 import { staBaseUrl } from "../config/Config";
 import { EMPTY_UOM, NATUSFERA_BASE_URL } from "../config/Constants";
-import { PHOTO_DEFINITION, TAXON_DEFINITION } from "../sta/citSciTypes";
+import { TAXON_DEFINITION } from "../sta/staTypes";
 
 
 const observedPropertyNameTaxon = "taxon";
@@ -97,7 +97,7 @@ function parsePhotoObservations(row: any, record: any) {
   for (let i = 0; i < row.observation_photos_count; i++) {
     record.observation[observedPropertyNamePhoto + "_" + i] = {
       name: observedPropertyNamePhoto + "_" + i,
-      observationType: PHOTO_DEFINITION,
+      observationType: TAXON_DEFINITION,
       parameters: [
         {
           name: "attribution",

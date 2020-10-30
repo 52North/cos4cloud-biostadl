@@ -1,34 +1,38 @@
 import STA from "../sta/sta_service";
-import { Location, createRef } from "../sta/staTypes";
-import { staBaseUrl } from "../config/Config";
-import { EMPTY_UOM, NATUSFERA_BASE_URL, STA_ID } from "../config/Constants";
-import DataLoader from "./CSVReader";
-import { Record, CitSciObservation, CitScientist, CitSciProject } from "./record_types";
-import { OM_TYPE, PHOTO_DEFINITION, TAXON_DEFINITION } from "../sta/citSciTypes";
-import { FeatureOfInterest, HistoricalLocation, NamedValue, Observation } from "../sta/staTypes";
-import CitSciDataProvider from "./CitSciIEDataProvider";
+import { Location, createRef, TAXON_DEFINITION, PHOTO_DEFINITION } from "../sta/staTypes";
+import { NATUSFERA_BASE_URL, STA_ID } from "../config/Constants";
+import { ParsedRecord, CitSciObservation, CitScientist, CitSciProject } from "./record_types";
+import { FeatureOfInterest, HistoricalLocation, NamedValue } from "../sta/staTypes";
 
 export default class RecordParser {
 
-    parseRecords(data: any[]): Record[] {
+    parseRecords(data: any[]): { projects: CitSciProject[]; records: ParsedRecord[]; } {
         if (!data) {
-            return [];
+            return { projects: [], records: [] };
         }
 
+        const allProjects: Record<string, CitSciProject> = {};
         const records = data.map((row: any) => {
+            const projects = createProjects(row);
+            Object.keys(projects).forEach(id => allProjects[id] = projects[id]);
+            const recordId = row.id;
+            const feature = RecordParser.createFeature(row);
             return {
-                id: row.id,
+                id: recordId,
                 user: createUser(row),
-                feature: RecordParser.createFeature(row),
-                observations: createObservations(row),
+                projects: Object.values(projects),
+                observations: createObservations(recordId, feature["@iot.id"], row),
                 resultTime: row.created_at_utc,
-                project: createProject(row),
-                url: row.uri
+                url: row.uri,
+                feature      
             };
         });
 
-        // remove invalid records
-        return removeDuplicates(records.filter((record: Record) => record.feature.feature));
+        return {
+            projects: Object.values(allProjects),
+            // remove invalid records
+            records: removeDuplicates(records.filter((record: ParsedRecord) => record.feature.feature))
+        };
     }
 
     static createFeature(row: any): FeatureOfInterest {
@@ -41,7 +45,7 @@ export default class RecordParser {
         };
     }
 
-    static createHistoricalLocation(record: Record, thingId?: string): HistoricalLocation {
+    static createHistoricalLocation(record: ParsedRecord, thingId?: string): HistoricalLocation {
         const feature = record.feature;
         const location = createLocation(feature.feature);
         const time = record.resultTime;
@@ -84,40 +88,54 @@ function createUser(row: any): CitScientist {
     };
 }
 
-function createObservations(row: any): CitSciObservation[] {
-    return [
-        createTaxonObservation(row),
-        ...createPhotoObservations(row)
-    ];
+function createObservations(recordId: string, featureId: string, row: any): CitSciObservation[] {
+    const observations = [];
+    if (row.species_guess) {
+        observations.push(createTaxonObservation(recordId, featureId, row));
+    }
+    if (row.observation_photos_count > 0) {
+        observations.push(...createPhotoObservations(recordId, featureId, row));
+    }
+    return observations;
 }
 
-function createTaxonObservation(row: any): CitSciObservation {
+function createTaxonObservation(recordId: string, featureId: string, row: any): CitSciObservation {
     return {
+        recordId,
+        featureId,
         name: "taxon",
         type: TAXON_DEFINITION,
         result: row.species_guess,
-        parameters: [
-            // TODO own observations?!
-            {
-                name: "taxon_name",
-                value: row.taxon_name
-            },
-            {
-                name: "fenofase",
-                value: row.Fenofase
-            }
-        ]
+        resultTime: row.created_at_utc
+        // TODO further datastreams? (discuss workflow)
+        // parameters: [
+        //     // TODO own observations?!
+        //     {
+        //         name: "taxon_name",
+        //         value: row.taxon_name
+        //     },
+        //     {
+        //         name: "fenofase",
+        //         value: row.Fenofase
+        //     }
+        // ]
     }
 }
 
-function createPhotoObservations(row: any): CitSciObservation[] {
+function createPhotoObservations(recordId: string, featureId: string, row: any): CitSciObservation[] {
     const observations: CitSciObservation[] = [];
     for (let i = 0; i < row.observation_photos_count; i++) {
+        const attributionString = row[`photo_attribution_${i}`];
+        const licenseGuess = parseLicense(attributionString);
         observations.push({
+            recordId,
+            featureId,
             name: `photo_${i}`,
+            resultTime: row.created_at_utc,
             parameters: createPhotoParameters(row, i),
             result: row[`photo_large_url_${i}`],
             type: PHOTO_DEFINITION,
+            licenseGuess
         });
     }
     return observations;
@@ -133,16 +151,40 @@ function createPhotoParameters(row: any, index: number): NamedValue[] {
             });
         }
     }
-    addIfPresent("attribution", row[`photo_attribution_${index}`]);
+
+    // TODO add parameters
+
     return parameters;
 }
 
-function removeDuplicates(records: Record[]) {
+function parseLicense(attribution?: string): {license: string, attribution?: string} {
+    let license = "unknown;"
+    if (attribution?.match(/^.*\(CC BY-SA\).*$/)) {
+        license = "CC_BY-SA";
+    } else if (attribution?.match(/^.*\(CC BY-ND\).*$/)) {
+        license = "CC_BY-ND";
+    } else if (attribution?.match(/^.*\(CC BY-NC\).*$/)) {
+        license = "CC_BY-NC";
+    } else if (attribution?.match(/^.*\(CC BY-NC-SA\).*$/)) {
+        license = "CC_BY-NC-SA";
+    } else if (attribution?.match(/^.*\(CC BY-NC-ND\).*$/)) {
+        license = "CC_BY-NC-ND";
+    } else if (attribution?.match(/^.*\(CC BY\).*$/)) {
+        license = "CC_BY";
+    }
+        
+    return {
+        license,
+        attribution: attribution
+    };
+}
+
+function removeDuplicates(records: ParsedRecord[]) {
     if (!records || records.length === 0) {
         return records;
     }
 
-    records.forEach((elem: Record, index: number, self: Record[]) => {
+    records.forEach((elem: ParsedRecord, index: number, self: ParsedRecord[]) => {
         const current = elem;
         const currentIdx = index;
         const duplicate = self.find((record, i) => record.id === current.id && currentIdx !== i);
@@ -153,10 +195,18 @@ function removeDuplicates(records: Record[]) {
     return records;
 }
 
-function createProject(row: any): CitSciProject {
-    return {
-        id: row.project_id_0,
-        title: row.project_title_0
-    }
+function createProjects(row: any): Record<string, CitSciProject> {
+    const project_postfixes = [0, 1, 2, 3];
+    const projects: Record<string, CitSciProject> = {};
+    project_postfixes.forEach(postfix => {
+        const projectId = row[`project_id_${postfix}`];
+        if (projectId) {
+            projects[projectId] = {
+                id: projectId,
+                title: row[`project_title_${postfix}`]
+            };
+        }
+    });
+    return projects;
 }
 

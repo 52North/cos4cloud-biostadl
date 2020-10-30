@@ -3,7 +3,6 @@ import CSVReader from "./app/CSVReader";
 import old_apprach from "./app/old_approach"
 import RecordParser from "./app/RecordParser";
 import { staBaseUrl } from "./config/Config";
-import { Record } from "./app/record_types";
 import STA from "./sta/sta_service";
 import { StaDataLoader } from "./sta/StaDataLoader";
 
