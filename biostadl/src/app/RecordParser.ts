@@ -21,7 +21,7 @@ export default class RecordParser {
                 id: recordId,
                 user: createUser(row),
                 projects: Object.values(projects),
-                observations: createObservations(recordId, feature["@iot.id"], row),
+                observations: createObservations(recordId, feature["@iot.id"]!, row),
                 resultTime: row.created_at_utc,
                 url: row.uri,
                 feature      
