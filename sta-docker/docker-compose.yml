@@ -30,11 +30,12 @@ services:
     #   restart_policy:
     #     condition: on-failure
   sta:
-    build: ./sta
+    image: 52north/sensorweb-server-sta_citsci
+    #build: ./sta
     networks:
       - backend
     ports:
-      - 8080:8081
+      - 8080:8080
       - 1883:1883
       - 8883:8883
     environment:
@@ -49,6 +50,7 @@ services:
       MQTT_BROKER_PLAINTCP_ENABLED: "true"
       MQTT_BROKER_WEBSOCKET_ENABLED: "true"
       MQTT_BROKER_PERSISTENCE_ENABLED: "false"
+      SERVER_PORT: 8080
       SERVER_ROOTURL: "@@STA_SERVER_ROOT_URL@@"
       SERVER_SERVLET_CONTEXT_PATH: /sta
       SERVER_FEATURE_UPDATEFOI: "false"
