@@ -59,7 +59,6 @@ services:
       SERVER_FEATURE_HTTPREADONLY: "${STA_HTTP_READ_ONLY}"
       SERVER_FEATURE_MQTTREADONLY: "${STA_MQTT_READ_ONLY}"
       SERVER_FEATURE_ISMOBILE: "false"
-    restart: on-failure:10
     depends_on:
     - database
 
