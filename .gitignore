@@ -113,3 +113,4 @@ client/src/app/auth.config.ts
 biostadl/out
 
 sta-docker/kubernetes/*.yaml
+cos4cloud.code-workspace
