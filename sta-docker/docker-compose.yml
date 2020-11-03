@@ -1,7 +1,8 @@
 version: '3'
 services:
   httpd:
-    build: ./httpd
+    image: 52north/cos4cloud-sta-oidc-httpd
+    #build: ./httpd
     networks:
       - backend
     env_file:
@@ -9,10 +10,6 @@ services:
     ports:
       - 80:80
       - 443:443
-    volumes:
-      - ./httpd/htdocs/:/usr/local/apache2/htdocs
-      - ${HTTPD_SSL_CRT}:/usr/local/apache2/conf/cert.crt
-      - ${HTTPD_SSL_KEY}:/usr/local/apache2/conf/cert.key
     environment:
       HTTPD_LOG_LEVEL: ${HTTPD_LOG_LEVEL}
       HTTPD_SSL_LOG_LEVEL: ${HTTPD_SSL_LOG_LEVEL}
@@ -30,8 +27,7 @@ services:
     #   restart_policy:
     #     condition: on-failure
   sta:
-    image: 52north/sensorweb-server-sta_citsci
-    #build: ./sta
+    image: 52north/cos4cloud-sta-citsci
     networks:
       - backend
     ports:

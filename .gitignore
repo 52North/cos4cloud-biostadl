@@ -111,3 +111,5 @@ oidc.env
 # temporary auth config file
 client/src/app/auth.config.ts
 biostadl/out
+
+sta-docker/kubernetes/*.yaml

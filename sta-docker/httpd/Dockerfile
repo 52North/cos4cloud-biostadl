@@ -1,9 +1,12 @@
 FROM httpd:2.4
 
-RUN apt-get update && apt-get install -y \
-    libapache2-mod-auth-openidc \
-    && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/lib/apache2/modules/mod_auth_openidc.so /usr/local/apache2/modules/mod_auth_openidc.so
+RUN apt-get update && \
+    apt-get install -y \
+    libapache2-mod-auth-openidc && \
+    rm -rf /var/lib/apt/lists/* && \
+    ln -s /usr/lib/apache2/modules/mod_auth_openidc.so /usr/local/apache2/modules/mod_auth_openidc.so && \
+    apt-get -y clean && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV HTTPD_HOST "localhost"
 ENV HTTPD_STA_PATH "/sta"
