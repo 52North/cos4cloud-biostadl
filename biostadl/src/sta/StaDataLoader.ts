@@ -1,7 +1,7 @@
 
 import STA from "./sta_service";
 
-import { EMPTY_UOM, NATUSFERA_BASE_URL, STA_ID } from "../config/Constants";
+import { EMPTY_UOM, NATUSFERA_BASE_URL, STA_ID } from "../common/Constants";
 import { CitSciObservation, CitSciProject, ParsedRecord } from "../citsciie/record_types";
 import RecordParser from "../citsciie/RecordParser";
 import {

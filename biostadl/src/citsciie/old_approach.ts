@@ -1,6 +1,6 @@
 import STA from "../sta/sta_service";
-import { staBaseUrl } from "../config/Config";
-import { EMPTY_UOM, NATUSFERA_BASE_URL } from "../config/Constants";
+import { staBaseUrl } from "../common/Config";
+import { EMPTY_UOM, NATUSFERA_BASE_URL } from "../common/Constants";
 import { TAXON_DEFINITION } from "../sta/staTypes";
 
 

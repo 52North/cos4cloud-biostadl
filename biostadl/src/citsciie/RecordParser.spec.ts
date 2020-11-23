@@ -4,11 +4,9 @@
 // const DataLoader = require("../build/CitSciIEDataLoader");
 
 import chai from 'chai';
-import { DataProvider } from "./CSVReader"
 import RecordParser from "./RecordParser";
 
 import 'mocha';
-import { features } from 'process';
 
 const assert = chai.assert;
 
