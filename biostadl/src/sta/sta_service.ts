@@ -1,6 +1,6 @@
 
 import superagent, { SuperAgentRequest } from "superagent";
-import { STA_ID } from "../config/Constants";
+import { STA_ID } from "../common/Constants";
 import { DataStream } from "./staTypes";
 
 

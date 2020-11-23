@@ -1,6 +1,6 @@
 import STA from "../sta/sta_service";
 import { Location, createRef, TAXON_DEFINITION, PHOTO_DEFINITION } from "../sta/staTypes";
-import { NATUSFERA_BASE_URL, STA_ID } from "../config/Constants";
+import { NATUSFERA_BASE_URL, STA_ID } from "../common/Constants";
 import { ParsedRecord, CitSciObservation, CitScientist, CitSciProject } from "./record_types";
 import { FeatureOfInterest, HistoricalLocation, NamedValue } from "../sta/staTypes";
 

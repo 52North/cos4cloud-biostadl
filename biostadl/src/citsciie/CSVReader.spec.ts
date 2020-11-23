@@ -5,10 +5,10 @@
 
 import chai from 'chai';
 import RecordParser from "./RecordParser";
-import CSVReader, { DataProvider } from "./CSVReader";
+import CSVReader from "./CSVReader";
 
 import 'mocha';
-import { compileFunction } from 'vm';
+import { DataProvider } from '../common/DataDownloader';
 
 const assert = chai.assert;
 

@@ -2,11 +2,7 @@ import fs from 'fs';
 import tmp from "tmp";
 import path from "path";
 import parseCSV from 'csv-parse';
-import superagent from "superagent";
-
-export interface DataProvider {
-    loadData(): Promise<any>;
-}
+import { DataProvider } from '../common/DataDownloader';
 
 export default class CSVReader {
     
