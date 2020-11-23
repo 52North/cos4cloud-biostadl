@@ -1,7 +1,6 @@
-import CitSciDataProvider from "./app/CitSciIEDataProvider";
-import CSVReader from "./app/CSVReader";
-import old_apprach from "./app/old_approach"
-import RecordParser from "./app/RecordParser";
+import CitSciDataProvider from "./citsciie/CitSciIEDataProvider";
+import CSVReader from "./citsciie/CSVReader";
+import RecordParser from "./citsciie/RecordParser";
 import { staBaseUrl } from "./config/Config";
 import STA from "./sta/sta_service";
 import { StaDataLoader } from "./sta/StaDataLoader";
