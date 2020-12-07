@@ -1,16 +1,14 @@
 pipeline {
   agent {
-    docker {
-      image 'node:alpine3.10'
-      args '-p 3000:3000'
+    node {
+      label 'Build Loader'
     }
 
   }
   stages {
-    stage('Build Loader') {
+    stage('') {
       steps {
         sh '''cd biostadl
-npm install
 npm run build'''
       }
     }
