@@ -12,8 +12,7 @@ pipeline {
       steps {
         echo 'Hello World'
         dir(path: 'biostadl') {
-          sh '''#!/usr/bin/sh
-echo $(pwd)'''
+          sh '''echo ${pwd}'''
         }
 
       }
