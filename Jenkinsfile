@@ -8,10 +8,10 @@ pipeline {
   stages {
     stage('Build Loader') {
       steps {
-        sh '''cd biostadl
-echo $(pwd)
-npm install
-npm run build'''
+        sh '''cd biostadl;
+echo $(pwd);
+npm install;
+npm run build;'''
       }
     }
 
