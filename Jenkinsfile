@@ -10,7 +10,8 @@ pipeline {
 
       }
       steps {
-        sh '''cd biostadl
+        sh '''pwd
+cd biostadl
 npm install
 npm run build'''
       }
