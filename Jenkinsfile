@@ -2,17 +2,12 @@ pipeline {
   agent {
     docker {
       image 'node:14-alpine'
+      args '-u "node"'
     }
 
   }
   stages {
     stage('Build Loader') {
-      agent {
-        docker {
-          image 'node:14-alpine'
-        }
-
-      }
       steps {
         sh 'cd biostadl'
         sh 'npm install'
