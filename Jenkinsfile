@@ -10,9 +10,9 @@ pipeline {
 
       }
       steps {
-        sh 'cd biostadl'
-        sh 'npm install'
-        sh 'npm run build'
+        sh '''cd biostadl
+npm install
+npm run build'''
       }
     }
 
