@@ -1,12 +1,12 @@
 pipeline {
   agent {
     node {
-      label 'Build Loader'
+      label 'Jenkins'
     }
 
   }
   stages {
-    stage('') {
+    stage('Build Loader') {
       steps {
         sh '''cd biostadl
 npm run build'''
