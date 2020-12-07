@@ -12,7 +12,7 @@ pipeline {
       steps {
         echo 'Hello World'
         dir(path: 'biostadl') {
-          echo '${pwd}'
+          sh 'npm install'
         }
 
       }
