@@ -11,6 +11,7 @@ pipeline {
       }
       steps {
         echo 'Hello World'
+        sh 'echo "another message"'
       }
     }
 
