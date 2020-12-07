@@ -10,9 +10,7 @@ pipeline {
 
       }
       steps {
-        sh 'cd ${WORKSPACE}/biostadl'
-        sh 'npm install'
-        sh 'npm run build'
+        sh 'echo ${WORKSPACE}/biostadl'
       }
     }
 
