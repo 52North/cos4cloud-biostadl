@@ -1,7 +1,7 @@
 pipeline {
   agent {
-    node {
-      label 'Jenkins'
+    docker {
+      image 'node:12-alpine3.12'
     }
 
   }
@@ -9,6 +9,7 @@ pipeline {
     stage('Build Loader') {
       steps {
         sh '''cd biostadl
+npm install
 npm run build'''
       }
     }
