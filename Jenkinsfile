@@ -8,7 +8,9 @@ pipeline {
   stages {
     stage('Build Loader') {
       steps {
-        sh 'node --version'
+        sh 'cd biostadl'
+        sh 'npm install'
+        sh 'npm run build'
       }
     }
 
