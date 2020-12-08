@@ -4,7 +4,7 @@ pipeline {
     stage('Biostadl Data Loader') {
       agent {
         docker {
-          image: 'node:14-alpine'
+          image 'node:14-alpine'
         }
       }
       stages {
