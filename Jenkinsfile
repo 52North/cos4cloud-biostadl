@@ -11,7 +11,7 @@ pipeline {
       }
       stages {
         stage('Init') {
-          steps 
+          steps {
             echo 'Initialize'
             dir(path: 'biostadl') {
               sh 'npm install'
