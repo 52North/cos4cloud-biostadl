@@ -7,6 +7,9 @@ pipeline {
           image 'node:14-alpine'
         }
       }
+      environment {
+        HOME = '.'
+      }
       stages {
         stage('Build Data Loader') {
           
