@@ -1,16 +1,15 @@
 pipeline {
-  agent any
+  agent none
   stages {
-    stage('Build Loader') {
-      agent none
-      
-      stages {
-        agent {
-          docker {
-            image: 'node:14-alpine'
-          }
+    stage('Biostadl Data Loader') {
+      agent {
+        docker {
+          image: 'node:14-alpine'
         }
-        stage('Init') {
+      }
+      stages {
+        stage('Build Data Loader') {
+          
           steps {            
             dir('${WORKSPACE}/biostadl') {
               echo 'Installing node dependencies'
@@ -25,12 +24,12 @@ pipeline {
         }
         
         stage('Build') {
+
           steps {            
             dir('${WORKSPACE}/biostadl') {
               echo 'Building loader'
               sh 'npm run build'
             }
-
           }
         }
       }
