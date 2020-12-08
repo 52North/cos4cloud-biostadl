@@ -14,7 +14,7 @@ pipeline {
         dir('${WORKSPACE}/biostadl') {
           nodejs('nodejs_15.3.0') {
              sh label: 'install dependencies', script: 'npm install'
-             sh label: 'transpile typescript', script: 'npm run build
+             sh label: 'transpile typescript', script: 'npm run build'
           }
         }
 
