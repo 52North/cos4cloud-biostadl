@@ -11,7 +11,7 @@ pipeline {
         stage('Build Data Loader') {
           
           steps {            
-            dir('${WORKSPACE}/biostadl') {
+            dir('biostadl') {
               echo 'Installing node dependencies'
               sh 'npm install'
               
@@ -26,7 +26,7 @@ pipeline {
         stage('Build') {
 
           steps {            
-            dir('${WORKSPACE}/biostadl') {
+            dir('biostadl') {
               echo 'Building loader'
               sh 'npm run build'
             }
