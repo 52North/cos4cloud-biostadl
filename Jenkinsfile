@@ -11,25 +11,21 @@ pipeline {
       }
       stages {
         stage('Init') {
-          steps {
-            sh 'npm install'
-          }
-        }
-        
-        stage('Cleanup') {
-          steps {
-            echo 'Clean up'
+          steps 
+            echo 'Initialize'
             dir(path: 'biostadl') {
+              sh 'npm install'
               sh 'npm run clean'
             }
-
           }
         }
 
         stage('Build') {
           steps {
-            echo 'Build'
-            sh 'npm run build'
+            dir(path: 'biostadl') {
+              echo 'Build'
+              sh 'npm run build'
+            }
           }
         }
 
