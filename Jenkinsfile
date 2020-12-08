@@ -1,6 +1,7 @@
 pipeline {
   agent none
   stages {
+
     stage('Data Loader') {
       agent {
         docker {
@@ -8,12 +9,6 @@ pipeline {
         }
 
       }
-      steps {
-        echo 'Data Loader'
-      }
-    }
-
-    stage('Cleanup') {
       stages {
         stage('Cleanup') {
           steps {
