@@ -14,7 +14,7 @@ pipeline {
     }
 
     stage('Cleanup') {
-      parallel {
+      stages {
         stage('Cleanup') {
           steps {
             echo 'Clean up'
@@ -25,6 +25,12 @@ pipeline {
           }
         }
 
+        stage('Init') {
+          steps {
+            sh 'npm install'
+          }
+        }
+        
         stage('Build') {
           steps {
             echo 'Build'
@@ -32,11 +38,6 @@ pipeline {
           }
         }
 
-        stage('Init') {
-          steps {
-            sh 'npm install'
-          }
-        }
 
       }
     }
