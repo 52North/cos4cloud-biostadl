@@ -4,15 +4,35 @@ pipeline {
     stage('Build Loader') {
       agent none
       
-      steps {
-        echo 'Hello World'
-        dir('${WORKSPACE}/biostadl') {
-          nodejs('nodejs_15.3.0') {
-             sh label: 'install dependencies', script: 'npm install'
-             sh label: 'transpile typescript', script: 'npm run build'
+      stages {
+        agent {
+          docker {
+            image: 'node:14-alpine'
           }
         }
+        stage('Init') {
+          steps {            
+            dir('${WORKSPACE}/biostadl') {
+              echo 'Installing node dependencies'
+              sh 'npm install'
+              
+              echo 'cleanup'
+              sh 'npm run clean'
+              
+            }
 
+          }
+        }
+        
+        stage('Build') {
+          steps {            
+            dir('${WORKSPACE}/biostadl') {
+              echo 'Building loader'
+              sh 'npm run build'
+            }
+
+          }
+        }
       }
     }
 
