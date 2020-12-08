@@ -2,17 +2,8 @@ pipeline {
   agent none
   stages {
     stage('Biostadl Data Loader') {
-      agent {
-        docker {
-          image 'node:14-alpine'
-        }
-      }
-      environment {
-        HOME = '.'
-      }
       stages {
         stage('Build Data Loader') {
-          
           steps {            
             dir('biostadl') {
               echo 'Installing node dependencies'
