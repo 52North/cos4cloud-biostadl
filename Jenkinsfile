@@ -10,6 +10,12 @@ pipeline {
 
       }
       stages {
+        stage('Init') {
+          steps {
+            sh 'npm install'
+          }
+        }
+        
         stage('Cleanup') {
           steps {
             echo 'Clean up'
@@ -20,12 +26,6 @@ pipeline {
           }
         }
 
-        stage('Init') {
-          steps {
-            sh 'npm install'
-          }
-        }
-        
         stage('Build') {
           steps {
             echo 'Build'
