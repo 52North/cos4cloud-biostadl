@@ -1,15 +1,15 @@
 pipeline {
   agent none
   stages {
+    agent {
+      docker {
+        image 'node:14-alpine'
+      }
+    }
+    environment {
+      HOME = '.'
+    }
     stage('Biostadl Data Loader') {
-      agent {
-        docker {
-          image 'node:14-alpine'
-        }
-      }
-      environment {
-        HOME = '.'
-      }
       stages {
         stage('Build Data Loader') {
           
