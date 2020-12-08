@@ -10,7 +10,8 @@
     "test": "mocha -r ts-node/register ./src/**/*.spec.ts",
     "lint": "eslint --ext .js ./src",
     "build": "tsc ",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "clean": "rimraf out"
   },
   "dependencies": {
     "csv-parse": "^4.9.1",
