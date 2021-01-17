@@ -31,7 +31,7 @@ export type CitSciObservation = {
     readonly result: any;
     readonly type: string;
     readonly validTime?: any;
-    readonly parameters?: NamedValue[];
+    readonly parameters?: any;
     readonly resultQuality?: any;
     readonly licenseGuess?: LicenseGuess;
 }

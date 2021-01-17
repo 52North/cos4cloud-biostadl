@@ -106,19 +106,12 @@ function createTaxonObservation(recordId: string, featureId: string, row: any): 
         name: "taxon",
         type: TAXON_DEFINITION,
         result: row.species_guess,
-        resultTime: row.created_at_utc
-        // TODO further datastreams? (discuss workflow)
-        // parameters: [
-        //     // TODO own observations?!
-        //     {
-        //         name: "taxon_name",
-        //         value: row.taxon_name
-        //     },
-        //     {
-        //         name: "fenofase",
-        //         value: row.Fenofase
-        //     }
-        // ]
+        resultTime: row.created_at_utc,
+        parameters: {
+            // TODO own observations?!
+            "taxon_name": row.taxon_name,
+            "fenofase": row.Fenofase
+        }
     }
 }
 
@@ -141,19 +134,15 @@ function createPhotoObservations(recordId: string, featureId: string, row: any):
     return observations;
 }
 
-function createPhotoParameters(row: any, index: number): NamedValue[] {
-    const parameters: NamedValue[] = [];
+function createPhotoParameters(row: any, index: number): any {
+    const parameters : any = {};
     const addIfPresent = function (key: string, value: string) {
         if (value) {
-            parameters.push({
-                name: key,
-                value
-            });
+            parameters[key] = value;
         }
     }
 
     // TODO add parameters
-
     return parameters;
 }
 
