@@ -74,7 +74,7 @@ export type Observation = {
     readonly result: any;
     readonly resultQuality?: any;
     readonly validTime?: any;
-    readonly parameters?: NamedValue[];
+    readonly parameters?: object;
     readonly Datastream?: StaReference | DataStream;
     readonly FeatureOfInterest: StaReference | FeatureOfInterest;
     readonly ObservationRelations?: ObservationRelation[];

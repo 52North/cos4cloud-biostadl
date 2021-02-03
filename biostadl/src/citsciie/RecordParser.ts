@@ -134,11 +134,11 @@ function createPhotoObservations(recordId: string, featureId: string, row: any):
     return observations;
 }
 
-function createPhotoParameters(row: any, index: number): any {
-    const parameters : any = {};
+function createPhotoParameters(row: any, index: number): object {
+    const parameters: Record<string, any> = {};
     const addIfPresent = function (key: string, value: string) {
         if (value) {
-            parameters[key] = value;
+            parameters.key = value;
         }
     }
 
