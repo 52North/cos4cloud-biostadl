@@ -166,7 +166,7 @@ async function _sendPayload(httpMethod: SuperAgentRequest, json: any): Promise<a
         })
         .catch(error => {
             const response = error.response;
-            console.debug(JSON.stringify(response, null, 2));
+            console.debug(JSON.stringify(response));
             throw error;
         });
 }
