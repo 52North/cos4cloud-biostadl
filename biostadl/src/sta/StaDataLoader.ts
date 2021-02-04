@@ -36,20 +36,22 @@ export class StaDataLoader {
         this.sta = sta;
     }
 
-    load(data: { projects: CitSciProject[], records: ParsedRecord[] }) {
-        const records = data.records;
+    load({ projects, records }: { projects: CitSciProject[], records: ParsedRecord[] }) {
+        console.info(`Start loading ${records.length} data records (of ${projects.length})`);
         Promise.all([
             addSensors(this.sta),
             addLicenses(this.sta),
             addObservedProperties(this.sta),
             gracefullyResolve(addFeatures(this.sta, records))
         ]).then(async (result: any[]) => {
+            console.info(`Start adding things ...`);
             const composites = await addThings(this.sta, records);
             composites.forEach(c => {
                 if (!c) composites.delete(c);
             })
 
             const jobs: Promise<any>[] = [];
+            console.info(`Start adding observation groups ...`);
             records.forEach(record => {
                 jobs.push(gracefullyResolve(this.sta.postGroup({
                     "@iot.id": `composite_group_${record.id}`,
@@ -63,8 +65,9 @@ export class StaDataLoader {
             });
 
             Promise.all(jobs).then(() => {
+                console.info(`Start adding datastreams ...`);
                 addDatastreams(this.sta, {
-                    data,
+                    projects,
                     sensors: result[0],
                     license: result[1],
                     observedProperties: result[2],
@@ -80,7 +83,7 @@ export class StaDataLoader {
 }
 
 async function addLicenses(sta: STA) {
-
+    console.info(`Start adding licenses ...`);
     const licenses: License[] = [
         {
             [STA_ID]: "CC_BY-SA",
@@ -140,6 +143,7 @@ async function addLicenses(sta: STA) {
 }
 
 async function addSensors(sta: STA) {
+    console.info(`Start adding sensors ...`);
     return sta.getSensors().then(response => {
         const sensors = response.body;
 
@@ -163,6 +167,7 @@ async function addSensors(sta: STA) {
 }
 
 async function addObservedProperties(sta: STA) {
+    console.info(`Start adding observed properties ...`);
     const jobs: Promise<ObservedProperty>[] = [];
     sta.getObservedProperties().then(response => {
         const obsProps = response.body;
@@ -190,6 +195,7 @@ async function addObservedProperties(sta: STA) {
 }
 
 async function addFeatures(sta: STA, records: ParsedRecord[]) {
+    console.info(`Start adding features ...`);
     return sta.getFeatures().then(async response => {
         const features = response.body;
         // each record => observed feature
@@ -248,7 +254,7 @@ async function addThings(sta: STA, records: ParsedRecord[]) {
 }
 
 async function addDatastreams(sta: STA, state: any) {
-    const { projects } = state.data as { projects: CitSciProject[] };
+    const projects = state.projects as CitSciProject[];
 
     const licenses = state.licenses as License[];
     const sensors = await state.sensors as Sensor[];
