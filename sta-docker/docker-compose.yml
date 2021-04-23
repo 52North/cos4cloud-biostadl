@@ -27,7 +27,7 @@ services:
     #   restart_policy:
     #     condition: on-failure
   sta:
-    image: 52north/cos4cloud-sta-citsci
+    image: 52north/cos4cloud-sta-citsci:3.0.1
     networks:
       - backend
     ports:
