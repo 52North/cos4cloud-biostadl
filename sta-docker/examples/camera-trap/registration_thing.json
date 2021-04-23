@@ -30,7 +30,7 @@
                 "symbol": "",
                 "definition": ""
             },
-            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
+            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TextObservation",
             "phenomenonTime": "2011-08-21T08:32:10.00Z",
             "ObservedProperty": {
                 "@iot.id": "imagery_democam1",
@@ -74,7 +74,7 @@
                 "symbol": "",
                 "definition": ""
             },
-            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TextObservation",
             "phenomenonTime": "2011-08-21T08:32:10.00Z",
             "ObservedProperty": {
                 "@iot.id": "taxon_democam1",
@@ -86,7 +86,7 @@
                 "@iot.id": "sensor_democam1_AI",
                 "name": "dynaikon species detection AI",
                 "description": "dynaikon AI animal detection",
-                "encodingType": "text/html",
+                "encodingType": "application/pdf",
                 "metadata": "https://gitlab.dynaikon.com/dynaikontrap/dynaikontrap/-/tree/master/DynAIkonTrap/filtering"
             },
             "License": {
