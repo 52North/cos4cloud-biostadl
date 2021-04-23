@@ -30,7 +30,7 @@
                 "symbol": "",
                 "definition": ""
             },
-            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TextObservation",
+            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
             "phenomenonTime": "2011-08-21T08:32:10.00Z",
             "ObservedProperty": {
                 "@iot.id": "imagery_democam1",
@@ -74,7 +74,7 @@
                 "symbol": "",
                 "definition": ""
             },
-            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TextObservation",
+            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
             "phenomenonTime": "2011-08-21T08:32:10.00Z",
             "ObservedProperty": {
                 "@iot.id": "taxon_democam1",
