@@ -1,0 +1,103 @@
+{
+    "@iot.id": "thing_democam1",
+    "description": "This is a camera trap auto-detecting animals",
+    "name": "52n's camera trap",
+    "Locations": [
+        {
+            "@iot.id": "52nCamTrap_1",
+            "name": "Location of 52N camera trap No. 1",
+            "description": "Somewhere in the Loddenheide",
+            "encodingType": "application/vnd.geo+json",
+            "location": {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        52,
+                        7
+                    ]
+                }
+            }
+        }
+    ],
+    "Datastreams": [
+        {
+            "@iot.id": "datastream-imagery_democam1",
+            "name": "captured imagery",
+            "description": "This datastream captures imagery where species have been detected",
+            "unitOfMeasurement": {
+                "name": "NA",
+                "symbol": "",
+                "definition": ""
+            },
+            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
+            "phenomenonTime": "2011-08-21T08:32:10.00Z",
+            "ObservedProperty": {
+                "@iot.id": "imagery_democam1",
+                "name": "Imagery",
+                "definition": "https://en.wikipedia.org/wiki/Image_sensor",
+                "description": "The imagery data where the detected species have been captured."
+            },
+            "Sensor": {
+                "@iot.id": "imagey_democam1",
+                "name": "dynaikon camera trap photo sensor",
+                "description": "imagery 1",
+                "encodingType": "application/pdf",
+                "metadata": "https://gitlab.dynaikon.com/dynaikontrap/urSense/-/blob/master/ursense-user-manual-v1.pdf"
+            },
+            "License": {
+                "@iot.id": "DemoMIT",
+                "name": "Demo MIT License",
+                "definition": "https://opensource.org/licenses/MIT"
+            },
+            "Project": {
+                "@iot.id": "Cos4Cloud_TIE",
+                "name": "Cos4Cloud TIE hackathon.",
+                "description": "This is a demo project for integrating Dynaikon camera trap with STA4CS",
+                "runtime": "2020-06-25T03:42:02-02:00",
+                "classification": "",
+                "privacyPolicy": "",
+                "termsOfUse": ""
+            },
+            "Party": {
+                "@iot.id": "52n",
+                "nickName": "52north",
+                "role": "institution"
+            }
+        },
+        {
+            "@iot.id": "datastream-taxon_democam1",
+            "name": "detected animal species",
+            "description": "This datastream provides taxon guesses on animal species detected by AI based on an imagery",
+            "unitOfMeasurement": {
+                "name": "NA",
+                "symbol": "",
+                "definition": ""
+            },
+            "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation",
+            "phenomenonTime": "2011-08-21T08:32:10.00Z",
+            "ObservedProperty": {
+                "@iot.id": "taxon_democam1",
+                "name": "GBIF Taxononmy",
+                "definition": "https://www.gbif.org/dataset/d7dddbf4-2cf0-4f39-9b2a-bb099caae36c",
+                "description": "The GBIX taxononmy backbone."
+            },
+            "Sensor": {
+                "@iot.id": "sensor_democam1_AI",
+                "name": "dynaikon species detection AI",
+                "description": "dynaikon AI animal detection",
+                "encodingType": "text/html",
+                "metadata": "https://gitlab.dynaikon.com/dynaikontrap/dynaikontrap/-/tree/master/DynAIkonTrap/filtering"
+            },
+            "License": {
+                "@iot.id": "DemoMIT"
+            },
+            "Project": {
+                "@iot.id": "Cos4Cloud_TIE"
+            },
+            "Party": {
+                "@iot.id": "52n"
+            }
+        }
+    ]
+}
