@@ -1,0 +1,40 @@
+{
+    "@iot.id": "group_democam1_group1",
+    "name": "composite observation",
+    "description": "Demo Group 1 description",
+    "properties": {
+        "type": "topLevel"
+    },
+    "ObservationRelations": [
+        {
+            "@iot.id": "relation_democam1_1",
+            "type": "root",
+            "Observation": {
+                "@iot.id": "observation_democam1_imagery1",
+                "result": "http://com.ft.imagepublish.prod.s3.amazonaws.com/8704d04e-f0a0-11e5-9f20-c3a047354386",
+                "phenomenonTime": "2021-03-11T17:55:09Z",
+                "Datastream": {
+                    "@iot.id": "datastream-imagery_democam1"
+                },
+                "FeatureOfInterest": {
+                    "@iot.id": "52n-backyard"
+                }
+            }
+        },
+        {
+            "@iot.id": "relation_democam1_2",
+            "type": "root",
+            "Observation": {
+                "@iot.id": "observation_democam1_detection",
+                "result": "https://www.ft.com/__origami/service/image/v2/images/raw/http%3A%2F%2Fcom.ft.imagepublish.prod.s3.amazonaws.com%2F8704d04e-f0a0-11e5-9f20-c3a047354386",
+                "phenomenonTime": "2021-03-11T17:55:09Z",
+                "Datastream": {
+                    "@iot.id": "datastream-imagery_democam1"
+                },
+                "FeatureOfInterest": {
+                    "@iot.id": "52n-backyard"
+                }
+            }
+        }
+    ]
+}
