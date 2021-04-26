@@ -1,0 +1,26 @@
+### Upload Observations via multiplart/mixed
+
+POST POST http://localhost:8080/v1.1/Observations
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: application/json
+
+{
+    "@iot.id": "observation_democam1_imagery1",
+    "result": "http://com.ft.imagepublish.prod.s3.amazonaws.com/8704d04e-f0a0-11e5-9f20-c3a047354386",
+    "phenomenonTime": "2021-03-11T17:55:09Z",
+    "Datastream": {
+        "@iot.id": "datastream-imagery_democam1"
+    },
+    "FeatureOfInterest": {
+        "@iot.id": "52n-backyard"
+    }
+}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="52n_logo"; filename="52n_logo-main.png"
+Content-Type: image/png
+
+< ./52n_logo-main.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
