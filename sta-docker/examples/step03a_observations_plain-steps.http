@@ -1,0 +1,59 @@
+### Upload image
+
+POST http://localhost:8080/v1.1/files
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+----WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="52n_logo-main.png"
+Content-Type: image/png
+
+< ./52n_logo-main.png
+----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+
+
+### Create Observations
+
+POST http://localhost:8080/v1.1/ObservationGroups
+Content-Type: application/json
+
+{
+    "@iot.id": "group_democam1_group1",
+    "name": "composite observation",
+    "description": "Demo Group 1 description",
+    "properties": {
+        "type": "topLevel"
+    },
+    "ObservationRelations": [
+        {
+            "@iot.id": "relation_democam1_1",
+            "type": "root",
+            "Observation": {
+                "@iot.id": "observation_democam1_imagery1",
+                "result": "http://localhost:8080/v1.1/files/52n_logo-main.png",
+                "phenomenonTime": "2021-03-11T17:55:09Z",
+                "Datastream": {
+                    "@iot.id": "datastream-imagery_democam1"
+                },
+                "FeatureOfInterest": {
+                    "@iot.id": "52n-backyard"
+                }
+            }
+        },
+        {
+            "@iot.id": "relation_democam1_2",
+            "type": "root",
+            "Observation": {
+                "@iot.id": "observation_democam1_detection",
+                "result": "Fox (gbif identifier)",
+                "phenomenonTime": "2021-03-11T17:55:09Z",
+                "Datastream": {
+                    "@iot.id": "datastream-taxon_democam1"
+                },
+                "FeatureOfInterest": {
+                    "@iot.id": "52n-backyard"
+                }
+            }
+        }
+    ]
+}

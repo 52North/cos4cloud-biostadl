@@ -1,0 +1,37 @@
+
+### Create a Thing
+
+POST http://localhost:8080/v1.1/FeaturesOfInterest
+Content-Type: application/json
+
+{
+    "@iot.id": "52n-backyard",
+    "name": "52n backyard",
+    "description": "southern side of 52n backyard",
+    "encodingType": "application/vnd.geo+json",
+    "feature": {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                [
+                    0,
+                    0.0
+                ],
+                [
+                    52,
+                    52
+                ],
+                [
+                    52,
+                    0
+                ],
+                [
+                    0,
+                    0
+                ]]
+            ]
+        }
+    }
+}
