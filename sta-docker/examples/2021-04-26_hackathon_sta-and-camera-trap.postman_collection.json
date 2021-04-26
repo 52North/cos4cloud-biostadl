@@ -1,0 +1,291 @@
+{
+	"info": {
+		"_postman_id": "ae598156-099e-4b8d-b36d-a4ee6299446b",
+		"name": "Cos4Cloud, STA CitSci && Quickstart Camera Trap",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "POST Project",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@iot.id\": \"Cos4Cloud_TIE\",\n    \"name\": \"Cos4Cloud TIE hackathon.\",\n    \"description\": \"This is a demo project for integrating Dynaikon camera trap with STA4CS\",\n    \"runtime\": \"2020-06-25T03:42:02-02:00\",\n    \"classification\": \"\",\n    \"privacyPolicy\": \"\",\n    \"termsOfUse\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/Projects",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"Projects"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST Party",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@iot.id\": \"52n\",\n    \"nickName\": \"52north\",\n    \"role\": \"institution\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/Parties",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"Parties"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST License",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@iot.id\": \"DemoMIT\",\n    \"name\": \"Demo MIT License\",\n    \"definition\": \"https://opensource.org/licenses/MIT\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/Licenses",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"Licenses"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST Thing (Camera Trap)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@iot.id\": \"thing_democam1\",\n    \"description\": \"This is a camera trap auto-detecting animals\",\n    \"name\": \"52n's camera trap\",\n    \"Locations\": [\n        {\n            \"@iot.id\": \"52nCamTrap_1\",\n            \"name\": \"Location of 52N camera trap No. 1\",\n            \"description\": \"Somewhere in the Loddenheide\",\n            \"encodingType\": \"application/vnd.geo+json\",\n            \"location\": {\n                \"type\": \"Feature\",\n                \"geometry\": {\n                    \"type\": \"Point\",\n                    \"coordinates\": [\n                        52,\n                        7\n                    ]\n                }\n            }\n        }\n    ],\n    \"Datastreams\": [\n        {\n            \"@iot.id\": \"datastream-imagery_democam1\",\n            \"name\": \"captured imagery\",\n            \"description\": \"This datastream captures imagery where species have been detected\",\n            \"unitOfMeasurement\": {\n                \"name\": \"NA\",\n                \"symbol\": \"\",\n                \"definition\": \"\"\n            },\n            \"observationType\": \"http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation\",\n            \"phenomenonTime\": \"2011-08-21T08:32:10.00Z\",\n            \"ObservedProperty\": {\n                \"@iot.id\": \"imagery_democam1\",\n                \"name\": \"Imagery\",\n                \"definition\": \"https://en.wikipedia.org/wiki/Image_sensor\",\n                \"description\": \"The imagery data where the detected species have been captured.\"\n            },\n            \"Sensor\": {\n                \"@iot.id\": \"imagey_democam1\",\n                \"name\": \"dynaikon camera trap photo sensor\",\n                \"description\": \"imagery 1\",\n                \"encodingType\": \"application/pdf\",\n                \"metadata\": \"https://gitlab.dynaikon.com/dynaikontrap/urSense/-/blob/master/ursense-user-manual-v1.pdf\"\n            },\n            \"License\": {\n                \"@iot.id\": \"DemoMIT\"\n            },\n            \"Project\": {\n                \"@iot.id\": \"Cos4Cloud_TIE\"\n            },\n            \"Party\": {\n                \"@iot.id\": \"52n\"\n            }\n        },\n        {\n            \"@iot.id\": \"datastream-taxon_democam1\",\n            \"name\": \"detected animal species\",\n            \"description\": \"This datastream provides taxon guesses on animal species detected by AI based on an imagery\",\n            \"unitOfMeasurement\": {\n                \"name\": \"NA\",\n                \"symbol\": \"\",\n                \"definition\": \"\"\n            },\n            \"observationType\": \"http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation\",\n            \"phenomenonTime\": \"2011-08-21T08:32:10.00Z\",\n            \"ObservedProperty\": {\n                \"@iot.id\": \"taxon_democam1\",\n                \"name\": \"GBIF Taxononmy\",\n                \"definition\": \"https://www.gbif.org/dataset/d7dddbf4-2cf0-4f39-9b2a-bb099caae36c\",\n                \"description\": \"The GBIX taxononmy backbone.\"\n            },\n            \"Sensor\": {\n                \"@iot.id\": \"sensor_democam1_AI\",\n                \"name\": \"dynaikon species detection AI\",\n                \"description\": \"dynaikon AI animal detection\",\n                \"encodingType\": \"application/pdf\",\n                \"metadata\": \"https://gitlab.dynaikon.com/dynaikontrap/dynaikontrap/-/tree/master/DynAIkonTrap/filtering\"\n            },\n            \"License\": {\n                \"@iot.id\": \"DemoMIT\"\n            },\n            \"Project\": {\n                \"@iot.id\": \"Cos4Cloud_TIE\"\n            },\n            \"Party\": {\n                \"@iot.id\": \"52n\"\n            }\n        }\n    ]\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/Things",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"Things"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST FeatureOfInterest (Camera Calibration)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@iot.id\": \"52n-backyard\",\n    \"name\": \"52n backyard\",\n    \"description\": \"southern side of 52n backyard\",\n    \"encodingType\": \"application/vnd.geo+json\",\n    \"feature\": {\n        \"type\": \"Feature\",\n        \"geometry\": {\n            \"type\": \"Polygon\",\n            \"coordinates\": [\n                [\n                [\n                    0,\n                    0.0\n                ],\n                [\n                    52,\n                    52\n                ],\n                [\n                    52,\n                    0\n                ],\n                [\n                    0,\n                    0\n                ]]\n            ]\n        }\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/FeaturesOfInterest",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"FeaturesOfInterest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST ObservationGroup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@iot.id\": \"group_democam1_group1\",\n    \"name\": \"composite observation\",\n    \"description\": \"Demo Group 1 description\",\n    \"properties\": {\n        \"type\": \"topLevel\"\n    },\n    \"ObservationRelations\": [\n        {\n            \"@iot.id\": \"relation_democam1_1\",\n            \"type\": \"root\",\n            \"Observation\": {\n                \"@iot.id\": \"observation_democam1_imagery1\",\n                \"result\": \"http://com.ft.imagepublish.prod.s3.amazonaws.com/8704d04e-f0a0-11e5-9f20-c3a047354386\",\n                \"phenomenonTime\": \"2021-03-11T17:55:09Z\",\n                \"Datastream\": {\n                    \"@iot.id\": \"datastream-imagery_democam1\"\n                },\n                \"FeatureOfInterest\": {\n                    \"@iot.id\": \"52n-backyard\"\n                }\n            }\n        },\n        {\n            \"@iot.id\": \"relation_democam1_2\",\n            \"type\": \"root\",\n            \"Observation\": {\n                \"@iot.id\": \"observation_democam1_detection\",\n                \"result\": \"Fox (gbif identifier)\",\n                \"phenomenonTime\": \"2021-03-11T17:55:09Z\",\n                \"Datastream\": {\n                    \"@iot.id\": \"datastream-taxon_democam1\"\n                },\n                \"FeatureOfInterest\": {\n                    \"@iot.id\": \"52n-backyard\"\n                }\n            }\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/ObservationGroups",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"ObservationGroups"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Upload File",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/home/specki/Pictures/52north_header.png"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/files",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all Files",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/home/specki/Pictures/52north_header.png"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/files",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST Observation (multipart/form-data)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "body",
+							"value": " {\n                \"@iot.id\": \"observation_democam1_imagery1\",\n                \"result\": \"http://com.ft.imagepublish.prod.s3.amazonaws.com/8704d04e-f0a0-11e5-9f20-c3a047354386\",\n                \"phenomenonTime\": \"2021-03-11T17:55:09Z\",\n                \"Datastream\": {\n                    \"@iot.id\": \"datastream-imagery_democam1\"\n                },\n                \"FeatureOfInterest\": {\n                    \"@iot.id\": \"52n-backyard\"\n                }\n            }",
+							"contentType": "application/json",
+							"type": "text"
+						},
+						{
+							"key": "file",
+							"contentType": "image/png",
+							"type": "file",
+							"src": "/home/specki/Pictures/52north_header.png"
+						}
+					],
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/Observations",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"Observations"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
