@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "ae598156-099e-4b8d-b36d-a4ee6299446b",
+		"_postman_id": "37dd5b4f-5e4b-439b-bc2a-3574f9cc64a5",
 		"name": "Cos4Cloud, STA CitSci && Quickstart Camera Trap",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -151,41 +151,9 @@
 			"response": []
 		},
 		{
-			"name": "POST ObservationGroup",
+			"name": "Upload File",
 			"request": {
 				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"@iot.id\": \"group_democam1_group1\",\n    \"name\": \"composite observation\",\n    \"description\": \"Demo Group 1 description\",\n    \"properties\": {\n        \"type\": \"topLevel\"\n    },\n    \"ObservationRelations\": [\n        {\n            \"@iot.id\": \"relation_democam1_1\",\n            \"type\": \"root\",\n            \"Observation\": {\n                \"@iot.id\": \"observation_democam1_imagery1\",\n                \"result\": \"http://com.ft.imagepublish.prod.s3.amazonaws.com/8704d04e-f0a0-11e5-9f20-c3a047354386\",\n                \"phenomenonTime\": \"2021-03-11T17:55:09Z\",\n                \"Datastream\": {\n                    \"@iot.id\": \"datastream-imagery_democam1\"\n                },\n                \"FeatureOfInterest\": {\n                    \"@iot.id\": \"52n-backyard\"\n                }\n            }\n        },\n        {\n            \"@iot.id\": \"relation_democam1_2\",\n            \"type\": \"root\",\n            \"Observation\": {\n                \"@iot.id\": \"observation_democam1_detection\",\n                \"result\": \"Fox (gbif identifier)\",\n                \"phenomenonTime\": \"2021-03-11T17:55:09Z\",\n                \"Datastream\": {\n                    \"@iot.id\": \"datastream-taxon_democam1\"\n                },\n                \"FeatureOfInterest\": {\n                    \"@iot.id\": \"52n-backyard\"\n                }\n            }\n        }\n    ]\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8081/v1.1/ObservationGroups",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8081",
-					"path": [
-						"v1.1",
-						"ObservationGroups"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Upload File",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
-			"request": {
-				"method": "GET",
 				"header": [],
 				"body": {
 					"mode": "formdata",
@@ -193,7 +161,7 @@
 						{
 							"key": "file",
 							"type": "file",
-							"src": "/home/specki/Pictures/52north_header.png"
+							"src": "/home/ridoo/data/coding/projects/cos4cloud/biostadl/sta-docker/examples/52n_logo-main.png"
 						}
 					]
 				},
@@ -246,6 +214,35 @@
 			"response": []
 		},
 		{
+			"name": "POST ObservationGroup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@iot.id\": \"group_democam1_group1\",\n    \"name\": \"composite observation\",\n    \"description\": \"Demo Group 1 description\",\n    \"properties\": {\n        \"type\": \"topLevel\"\n    },\n    \"ObservationRelations\": [\n        {\n            \"@iot.id\": \"relation_democam1_1\",\n            \"type\": \"root\",\n            \"Observation\": {\n                \"@iot.id\": \"observation_democam1_imagery1\",\n                \"result\": \"http://localhost:8081/v1.1/files/52n_logo-main.png\",\n                \"phenomenonTime\": \"2021-03-11T17:55:09Z\",\n                \"Datastream\": {\n                    \"@iot.id\": \"datastream-imagery_democam1\"\n                },\n                \"FeatureOfInterest\": {\n                    \"@iot.id\": \"52n-backyard\"\n                }\n            }\n        },\n        {\n            \"@iot.id\": \"relation_democam1_2\",\n            \"type\": \"root\",\n            \"Observation\": {\n                \"@iot.id\": \"observation_democam1_detection\",\n                \"result\": \"Fox (gbif identifier)\",\n                \"phenomenonTime\": \"2021-03-11T17:55:09Z\",\n                \"Datastream\": {\n                    \"@iot.id\": \"datastream-taxon_democam1\"\n                },\n                \"FeatureOfInterest\": {\n                    \"@iot.id\": \"52n-backyard\"\n                }\n            }\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/v1.1/ObservationGroups",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"v1.1",
+						"ObservationGroups"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "POST Observation (multipart/form-data)",
 			"request": {
 				"method": "POST",
@@ -263,7 +260,7 @@
 							"key": "file",
 							"contentType": "image/png",
 							"type": "file",
-							"src": "/home/specki/Pictures/52north_header.png"
+							"src": "/home/ridoo/data/coding/projects/cos4cloud/biostadl/sta-docker/examples/52n_logo-main.png"
 						}
 					],
 					"options": {
