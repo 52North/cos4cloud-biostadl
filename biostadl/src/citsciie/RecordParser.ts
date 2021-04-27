@@ -106,19 +106,12 @@ function createTaxonObservation(recordId: string, featureId: string, row: any): 
         name: "taxon",
         type: TAXON_DEFINITION,
         result: row.species_guess,
-        resultTime: row.created_at_utc
-        // TODO further datastreams? (discuss workflow)
-        // parameters: [
-        //     // TODO own observations?!
-        //     {
-        //         name: "taxon_name",
-        //         value: row.taxon_name
-        //     },
-        //     {
-        //         name: "fenofase",
-        //         value: row.Fenofase
-        //     }
-        // ]
+        resultTime: row.created_at_utc,
+        parameters: {
+            // TODO own observations?!
+            "taxon_name": row.taxon_name,
+            "fenofase": row.Fenofase
+        }
     }
 }
 
@@ -150,7 +143,6 @@ function createPhotoParameters(row: any, index: number): object {
     }
 
     // TODO add parameters
-
     return parameters;
 }
 
