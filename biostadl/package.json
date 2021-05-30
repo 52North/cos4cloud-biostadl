@@ -7,7 +7,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "mocha -r ts-node/register ./src/**/*.spec.ts",
+    "test": "mocha --require ts-node/register ./src/**/*.spec.ts",
+    "test:watch": "mocha --require ts-node/register --extensions ts --watch --watch-files ./src/**/*.spec.ts",
     "lint": "eslint --ext .js ./src",
     "build": "tsc ",
     "watch": "tsc -w"
@@ -29,7 +30,7 @@
     "eslint": "^7.0.0",
     "mocha": "^8.1.3",
     "nyc": "^15.1.0",
-    "ts-node": "^9.0.0",
+    "ts-node": "^9.1.1",
     "tslint": "^6.1.3",
     "typescript": "^4.0.2"
   }
