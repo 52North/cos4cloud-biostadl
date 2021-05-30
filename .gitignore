@@ -5,6 +5,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+cameratrap/html
+cameratrap/videos
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -114,3 +116,4 @@ biostadl/out
 
 sta-docker/kubernetes/*.yaml
 cos4cloud.code-workspace
+cameratrap/index.html
