@@ -30,6 +30,7 @@ ENV HTTPD_OIDC_REDIRECT_URI "${STA_SERVER_ROOT_URL}redirect_uri"
 ENV HTTPD_OIDC_SSL_VALIDATE_SERVER "On"
 
 ENV HTTPD_OIDC_SCOPE "openid profile email offline_access saml offline_access"
+ENV HTTPD_OIDC_REMOTE_USER_CLAIM "preferred_username"
 ENV HTTPD_OIDC_RESPONSE_TYPE "code id_token"
 ENV HTTPD_OIDC_RESPONSE_MODE "query"
 # ENV HTTPD_OIDC_SCOPE "openid"
