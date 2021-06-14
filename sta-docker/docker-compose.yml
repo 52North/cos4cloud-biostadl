@@ -27,7 +27,7 @@ services:
     #   restart_policy:
     #     condition: on-failure
   sta:
-    image: 52north/cos4cloud-sta-citsci:3.0.1
+    image: 52north/cos4cloud-sta-citsci:latest
     networks:
       - backend
     ports:
@@ -42,7 +42,7 @@ services:
       SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "false"
       SPRING_HTTP_LOG-REQUEST-DETAILS: "true"
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/sta
-      SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL_AUTO: ${STA_SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: public
       MQTT_BROKER_PLAINTCP_ENABLED: "true"
       MQTT_BROKER_WEBSOCKET_ENABLED: "true"
       MQTT_BROKER_PERSISTENCE_ENABLED: "false"
